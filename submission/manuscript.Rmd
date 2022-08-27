@@ -1,0 +1,1309 @@
+---
+title: "Bacterial communities of premise plumbing systems in four European cities, and their association with culturable *Legionella*"
+bibliography: references.bib
+output:
+  word_document: default
+  html_notebook: default
+  html_document: default
+csl: mbio.csl
+fontsize: 12pt
+geometry: margin=1.0in
+---
+
+```{r knitr_settings, include=FALSE, eval=TRUE, echo=FALSE, cache=FALSE}
+require("knitr")
+# opts_chunk$set(echo = FALSE, error = TRUE)
+
+opts_chunk$set("tidy" = TRUE)
+opts_chunk$set("echo" = FALSE)
+opts_chunk$set("eval" = TRUE)
+opts_chunk$set("warning" = FALSE)
+opts_chunk$set("message" = FALSE)
+opts_chunk$set("cache" = FALSE)
+
+inline_hook <- function(x){
+	print(x)
+
+	if(is.list(x)){
+		x <- unlist(x)
+	}
+
+	if(is.numeric(x)){
+		if(abs(x - round(x)) < .Machine$double.eps^0.5){
+			paste(format(x,big.mark=' ', digits=0, scientific=FALSE))
+		} else {
+			paste(format(x,big.mark=' ', digits=2, nsmall=1, scientific=FALSE))
+		}
+	} else {
+    	paste(x)      
+	}
+}
+knitr::knit_hooks$set(inline=inline_hook)
+```
+
+\vspace{35mm}
+
+**Running title:** Bacterial communities and culturable *Legionella* in four European cities
+
+\vspace{35mm}
+
+Maria Scaturro^1^, Federica Del Chierico^2^, Yair Motro^3^, Angeliki Chaldoupi^4^, Anastasia Flountzi^4^, Jacob Moran-Gilad^3^, Antonietta Girolamo^1^, Thomai Koutsiomani^4^, Bozena Krogulska^5^, Diane S. Lindsay^6^, Renata Matuszewska^5^, Georgios Papageorgiou^4^, Katarzyna Pancer^5^, Nikolaos Panoussis^4^, Maria Cristina Rota^1^, Soren Uldum^7^, Emmanuel Velonakis^8^, Dominique L. Chaput^6^$\dagger$, Maria Luisa Ricci^1^$\dagger$, ESCMID Study Group for Legionella Infections (ESGLI)
+
+\vspace{40mm}
+
+$\dagger$ To whom correspondence should be addressed: [dominique.chaput\@ggc.scot.nhs.uk](mailto:dominique.chaput@ggc.scot.nhs.uk){.email}, [marialuisa.ricci\@iss.it](mailto:marialuisa.ricci@iss.it){.email}
+
+1\. Istituto Superiore di Sanità, Department of Infectious Disease, Viale Regina Elena, 299, 00161, Rome, Italy
+
+2\. Multimodal Laboratory Medicine Research Area, Unit of Human Microbiome, Bambino Gesù Children's Hospital, IRCCS, Viale San Paolo 15, 00147, Rome, Italy
+
+3\. Department of Health Systems Management, School of Public Health, Faculty of Health Sciences, Ben Gurion University of the Negev, POB 653,ZIP 8410501, Beer Sheva, Israel
+
+4\. Central Public Health Laboratory, Hellenic National Public Health Organization, 34 Al. Fleming st., 16672, Vari-Athens, Attiki, Greece
+
+5\. National Institute of Public Health, NIH (NIPH-NIH), 24 ul. Chocimska, 00-791, Warsaw, Poland
+
+6\. Scottish Microbiology Reference Laboratories, 10-16 Alexandra Parade, G31 2ER, Glasgow, Scotland
+
+7\. Staten Serum Institute, Dept. of Bacteria, Parasites and Fungi, 5 Artillerivej \| DK-2300 Copenhagen S, Denmark
+
+8\. Hellenic National School of Public Health, 196 Alexandras Avenue, PS. 11521, Athens, Greece
+
+```{=tex}
+\newpage
+\linenumbers
+```
+```{r libraries, message=FALSE}
+library(breakaway)
+library(factoextra)
+library(flextable)
+library(glmmTMB)
+library(here)
+library(lme4)
+library(lmerTest)
+library(lsmeans)
+library(microbiome)
+library(phyloseq)
+library(tidyverse)
+library(UpSetR)
+library(vegan)
+library(zCompositions)
+
+set.seed(65536)
+
+```
+
+\newpage
+
+## Abstract
+
+*Legionella* species are Gram negative, facultative, intracellular bacteria ubiquitous in natural and engineered water systems. Understanding the bacterial interactions underlying *Legionella*'s success in aquatic environments could be beneficial for control. We aimed to profile, by 16S rRNA amplicon sequencing, the bacterial communities in premise plumbing systems of buildings in four European cities (Copenhagen, Warsaw, Rome, Athens), and identify positive and negative associations of specific community members to culturable *Legionella*. Coarse taxonomic composition was similar across the four cities, but Copenhagen and Warsaw had richer, more diverse communities than Athens and Rome, with a greater number of city-specific ASVs. The cities had significantly different bacterial communities at the ASV level, with relatively few shared ASVs. Out of 5128 ASVs, 73 were classified as *Legionella*, and most samples from each city (88.1% overall) had one or more of these in their 16S rRNA data. The relative abundance of *Legionella* ASVs did not correlate with whether samples had culturable *Legionella*. Overall, 44.2% of samples were culture positive for *Legionella*, but this varied across the cities: 71.4% in Warsaw, 62.2% in Athens, 22.2% in Rome, and 15.2% in Copenhagen. *Legionella* culture status was used to test for differential abundance of other bacterial community members at the ASV and genus level. We identified 54 specific ASVs and 42 genera that showed significant positive or negative associations with culturable *Legionella*. Negative associations included a *Staphylococcus* ASV and the genera *Pseudomonas*, *Acinetobacter*, *Hyphomicrobium*, and *Sphingopyxis*. Positive associations included several ASVs classified as *Nitrospira* and one classified as *Nitrosomodaceae* oc32, ASVs in the amoeba-associated genera *Craurococcus-Caldovatus* and *Reyranella*, and the predatory genus *Bdellovibrio*. Some of these associations are well supported by laboratory studies, but others are the opposite of what would have been predicted. These findings highlight the difficulties in translating results from experiments with pure cultures to complex real-world communities. Nonetheless, the positive and negative associations that we identified held across the four cities, across multiple buildings and plumbing compartments. This is important because developing better control measures, including probiotic approaches, will require an understanding of ecological relationships that can be generalised across different engineered water systems.
+
+### Importance
+
+This study provides a snapshot of the diversity of microbial communities among premise plumbing systems in four European cities, providing new information on bacterial ASVs and genera that have positive or negative associations with culturable *Legionella* across a broad geographical range. This could lead to studies aimed at confirming both *in vitro* and in real-world scenarios the role of other microbial community members in modulating *Legionella* proliferation, and will help in the development of probiotic approaches to controlling this opportunistic pathogen.
+
+\newpage
+
+## Introduction
+*Legionella pneumophila* (Lp) can cause Legionnaires’ disease, a severe pneumonic illness that, outside the covid-19 pandemic period, has shown a growing trend in cases across European countries (www.ecdc.europa.eu/en/legionnaires-disease/surveillance/atlas). The disease is spread by inhalation of *Legionella*-contaminated aerosols produced by inadequate maintenance of water systems. *Legionella* species are aquatic microorganisms often present at low concentrations in freshwater environments, but through municipal water dissemination, they can reach artificial water systems, where they often proliferate thanks to warmer temperatures and availability of limiting amino acids and iron. *Legionella* rarely lives in planktonic form; it owes its survival to multi-species biofilms and protozoa from which it derives nutrients and protection from physical stress and disinfection procedures [@Berry2006; @Pereira2021; @Shaheen2021]. *Legionella* abundance is modulated by complex microbial interactions, but even where its relative abundance in a biofilm is low, it can form a significant proportion of the bulk water microbiome through lysis of host amoebal cells and release of free *Legionella* [@Paniagua2020]. 
+
+The survival of Lp in engineered water systems is therefore driven not only by favourable temperature and nutrient conditions, but by interactions with other microbial species found as planktonic cells or members of mixed community biofilms. Such is the importance of these other community members that a probiotic approach, one focused on encouraging competitors, grazers, and antagonists in engineered water systems, has been suggested to control proliferation of Lp [@Wang2013; @Cavallaro2022]. Numerous bacterial taxa have been shown in pure culture to have a positive or negative influence on Lp growth. For example, the presence in plumbing systems of *Flavobacterium breve*, a L-cysteine producing bacterium, was shown to support Lp growth, as Lp cannot produce this amino acid itself [@Wadowsky1983]. Conversely, several taxa are known to inhibit Lp. *Staphylococcus warneri* produces a peptide called warnericin that has a *Legionella*-specific antagonistic effect [@Hechard2005]. *Pseudomonas* species can inhibit Lp through several mechanisms, including killing host *Acanthamoeba castellanii* [@Abd2008], and production of biosurfactants [@Loiseau2018], toxoflavin [@Faucher2022], bacteriocin-like substances [@Guerrieri2008], and volatile organic compounds with long-range inhibition [@Corre2019]. *Bdellovibrio*, an aerobic Gram-negative bacterium known to prey on other Gram-negative taxa, has lytic action against three *Legionella* species [@Tomov1982]. *Bacillus subtilis* can produce surfactin that inhibits both *Legionella* and its acanthamoeba host [@Loiseau2015]. Species in the genus *Neochlamydia* are obligate intracellular symbionts of amoeba, and their presence blocks infection by *Legionella*, thereby disrupting its replication [@Maita2018]. Numerous other taxa have been shown to reduce *Legionella* growth in pure culture, including isolates from the genera *Aeromonas*, *Flavobacterium*, *Acinetobacter*, *Kluyvera*, *Rahnella*, and *Sphingobacterium* [@Corre2019].
+
+Translating pure culture findings to real-world environmental systems is tricky, as effects seen with two or three isolated species on agar plates may not occur in mixed biofilms or bulk water containing hundreds, if not thousands, of additional taxa. Although they can only show correlation rather than causation, association studies, where abundance and prevalence of other microbial community members are compared between systems with different levels of *Legionella* growth, can indicate which laboratory-based, pure culture findings might still hold under natural conditions (i.e. in engineered water systems), therefore pointing to potential targets for probiotic interventions [@Cavallaro2022]. A few studies have used this approach in cooling towers in Quebec, Canada [@Paranjape2020a; @Paranjape2020b] and across the USA [@Llewellyn2017], as well as in premise plumbing of high-rise buildings in New York, USA [@Ma2020]. These studies used microbial community profiling by culture-independent sequencing of bacterial 16S rRNA [@Llewellyn2017; @Ma2020; @Paranjape2020a] or eukaryotic 18S rRNA [@Paranjape2020b] to see which other community members showed positive or negative correlations with *Legionella*. The USA premise plumbing study limited its analysis to the Class level, so specific families or genera associated with *Legionella* could not be resolved, but both cooling tower studies showed that *Pseudomonas* (or the family level, *Pseudomonadaceae*, in the USA study) had a negative correlation to *Legionella* spp., suggesting that the inhibitory effect seen in laboratory studies might also be occurring in cooling towers. The only other taxon that showed a negative relationship specifically to Lp, reported in the Quebec study, was the genus *Sphingobium*. The same study reported that numerous genera were enriched in *Legionella*-positive samples, including *Porphyrobacter*, *Sediminibacterium*, *Sphingopyxis*, *Hyphomicrobium*, and *Reyranella*, among others [@Paranjape2020a].
+
+These studies, correlating microbial community taxa with presence of *Legionella*, provided real-world evidence that supports some of the findings from laboratory work with pure cultures. However, the two studies that reported *Legionella*-bacteria associations at the family or genus level were both in cooling towers in North America, so it is unclear whether these associations occur across a wider range of engineered water environments. Therefore, we aimed to determine if similar relationships between *Legionella* and other specific bacterial taxa held across a broad geographical range (four European cities with key differences in water treatment approaches) and across different buildings and premise plumbing compartments, covering a wide temperature range. This first required comparison of the resident bacterial communities in buildings sampled in the four cities. Determining which *Legionella*-community interactions are broadly universal and which are limited to specific systems or conditions will help improve probiotic and other strategies for controlling the growth of *Legionella* in engineered water systems.
+
+
+## Results
+
+```{r load final data sets, warning=FALSE, message=FALSE}
+source(here("code", "settings_and_data_for_figures.R"))
+
+# Metadata is in samples_V4
+# Full phyloseq object is V4
+# Rarefied object is V4.rare
+# Rarefication level is nseqs
+```
+
+```{r sample and seq depth summary numbers}
+# Table of sample numbers per city
+samples.per.city <- samples_V4 %>%
+  dplyr::select(City, Bldg_ID, Location_in_building, sample_sums_final) %>%
+  group_by(City) %>%
+  summarise(n = n()) %>%
+  pull(n, name = City)
+
+# Sequence data stats
+total.seqs <- sum(samples_V4$sample_sums_final)
+min.seqs <- min(samples_V4$sample_sums_final)
+max.seqs <- max(samples_V4$sample_sums_final)
+median.seqs <- median(samples_V4$sample_sums_final)
+
+no.under.10k <- samples_V4 %>%
+  filter(sample_sums_final < 10000) %>%
+  nrow()
+
+no.with.phys.chem <- samples_V4 %>%
+  filter(!is.na(pH) & !is.na(Temp_degC)) %>%
+  nrow()
+```
+
+Of the 204 samples collected across the four cities, `r nrow(samples_V4)` were included in the final analyses: `r samples.per.city["Athens"]` from Athens, `r samples.per.city["Rome"]` from Rome, `r samples.per.city["Copenhagen"]` from Copenhagen, and `r samples.per.city["Warsaw"]` from Warsaw. One of the excluded samples had abnormally low sequencing depth (30 reads remaining after QC), and the rest of the excluded samples fell below the minimum 10 ng DNA threshold required by the sequencing service. Temperature and pH data were collected for a subset of the samples (n=`r no.with.phys.chem`), and their distributions show some differences among the four cities (Figure S1). However, due to missing measurements and because other potentially important physical/chemical parameters were not measured across all samples (e.g. dissolved carbon and nitrogen content, salts, disinfectant concentration), these parameters were not included as distinct terms in statistical models, but rather they were assumed to be part of what differentiated cities, buildings and compartments, and therefore were implicitly included in these model terms.
+
+In total, `r total.seqs` sequences passed QC and were grouped into `r ntaxa(V4)` amplicon sequence variants (ASVs). Sequencing depth per sample ranged from `r min.seqs` to `r max.seqs`, with a median depth of `r median.seqs`. All but `r no.under.10k` samples had over 10k sequences, so for analyses where subsampling to equal depth was required, these four samples were excluded in order to increase the amount of sequence data retained across the other samples.
+
+### Main bacterial classes and genera
+
+```{r}
+taxa_all <- as_tibble(as.data.frame(tax_table(V4.rare)), rownames = "ASV") %>%
+  mutate(total.reads = taxa_sums(V4.rare),
+         perc.overall = total.reads / sum(total.reads)) %>%
+  mutate(Phylum = replace_na(Phylum, "unclassified"))
+
+taxa_trimmed <- taxa_all %>%
+  filter(total.reads >= 10)
+
+phyla <- taxa_all %>%
+  dplyr::select(Phylum, total.reads, perc.overall) %>%
+  group_by(Phylum) %>%
+  summarise(total.reads = sum(total.reads),
+            perc = sum(perc.overall),
+            no.asvs = n())
+
+main.phyla <- phyla %>%
+  filter(Phylum != "unclassified") %>%
+  filter(perc > 0.01) %>%
+  arrange(desc(perc))
+
+classes <- taxa_all %>%
+  dplyr::select(Phylum, Class, total.reads, perc.overall) %>%
+  group_by(Phylum, Class) %>%
+  summarise(total.reads = sum(total.reads),
+            perc = sum(perc.overall),
+            no.asvs = n())
+
+classes.proteo <- classes %>%
+  filter(Phylum == "Proteobacteria")
+
+orders <- taxa_all %>%
+  dplyr::select(Phylum, Class, Order, total.reads, perc.overall) %>%
+  group_by(Phylum, Class, Order) %>%
+  summarise(total.reads = sum(total.reads),
+            perc = sum(perc.overall),
+            no.asvs = n())
+
+unclassified <- taxa_all %>%
+  filter(Phylum == "unclassified") %>%
+  dplyr::select(ASV, perc.overall, total.reads) %>%
+  arrange(desc(total.reads))
+```
+
+Across all samples, `r nrow(phyla)-1` bacterial phyla were represented in the 16S rRNA data, of which `r nrow(main.phyla)` accounted for at least 1% of sequences (Figure 1A) and `r sum(main.phyla$perc)*100`% in total. *`r as.character(main.phyla[1, "Phylum"])`* was the dominant phylum, accounting for `r as.numeric(main.phyla[1, "perc"])*100`% of all sequences and `r main.phyla[1, "no.asvs"]` of the `r ntaxa(V4)` ASVs. The proteobacterial sequences that could be further resolved all grouped into the classes *Gamma-* and *Alphaproteobacteria*. *Gammaproteobacteria* accounted for `r (filter(classes.proteo, Class == "Gammaproteobacteria") %>% pull(perc)) * 100`% of sequences and `r filter(classes.proteo, Class == "Gammaproteobacteria") %>% pull(no.asvs)` ASVs overall, and included `r (filter(orders, Class == "Gammaproteobacteria") %>% nrow()) - 1` orders, the dominant one being *Burkholderiales* with `r (filter(orders, Order == "Burkholderiales") %>% pull(perc)) * 100`% of total 16S sequences, followed by *Xanthomonadales* and *Pseudomonadales* at `r (filter(orders, Order == "Xanthomonadales") %>% pull(perc)) * 100`% and `r (filter(orders, Order == "Pseudomonadales") %>% pull(perc)) * 100`%, respectively. *Gammaproteobacteria* were most abundant in all cities except Athens, where *Alphaproteobacteria* were more abundant (Figure S2). Overall, *Alphaproteobacteria* accounted for `r (filter(classes.proteo, Class == "Alphaproteobacteria") %>% pull(perc)) * 100`% of sequences and `r filter(classes.proteo, Class == "Alphaproteobacteria") %>% pull(no.asvs)` ASVs, and included `r (filter(orders, Class == "Alphaproteobacteria") %>% nrow()) - 1` orders, the dominant ones being *Sphingomonadales* (`r (filter(orders, Order == "Sphingomonadales") %>% pull(perc)) * 100`%), *Rhizobiales* `r (filter(orders, Order == "Rhizobiales") %>% pull(perc)) * 100`%, *Acetobacterales* (`r (filter(orders, Order == "Acetobacterales") %>% pull(perc)) * 100`%), *Caulobacterales* (`r (filter(orders, Order == "Caulobacterales") %>% pull(perc)) * 100`%), and *Reyranellales* (`r (filter(orders, Order == "Reyranellales") %>% pull(perc)) * 100`%). 
+
+After *Proteobacteria*, the next most abundant phylum was *`r as.character(main.phyla[2, "Phylum"])`* at `r as.numeric(main.phyla[2, "perc"])*100`% and `r main.phyla[2, "no.asvs"]` ASVs, followed by *`r as.character(main.phyla[3, "Phylum"])`*, *`r as.character(main.phyla[4, "Phylum"])`* and *`r as.character(main.phyla[5, "Phylum"])`* at `r as.numeric(main.phyla[3, "perc"])*100`, `r as.numeric(main.phyla[4, "perc"])*100` and `r as.numeric(main.phyla[5, "perc"])*100`%, respectively (`r main.phyla[3, "no.asvs"]`, `r main.phyla[4, "no.asvs"]`, and `r main.phyla[5, "no.asvs"]` ASVs). While these phyla generally showed similar broad distribution patterns across each city, *Nitrospirota* were noticeably less abundant in Rome, with median relative abundance approximately two orders of magnitude lower than in the other cities (Figure 1A). At the phylum level, `r sum(unclassified$perc.overall)*100`% of sequences remained unclassified, including two of the top 25 most abundant individual ASVs (`r unclassified$ASV[1]` and `r unclassified$ASV[2]`, with `r unclassified$perc.overall[1]*100`% and `r unclassified$perc.overall[2]*100`% of all sequences, respectively).
+
+The top fifteen most abundant genera are shown in Figure 1B. Their pattern is more variable, with greater spread among samples within cities. For example, the relative abundance of the top genus *Denitratisoma*, in the *Gammaproteobacteria* class *Burkholderia*, varied widely, from being barely above the limit of detection in some samples, to encompassing over 50% of reads in other samples. Similar differences in relative abundance, several orders of magnitude within the same city, were seen in many of the other top fifteen genera. Although most of these genera were common across the four cities, the *Gammaproteobacteria* genera *Blastomonas* and *Craurococcus-Caldovatus* as well as the *Alphaproteobacteria* genus *Porphyrobacter* were nearly absent from Copenhagen samples but relatively abundant elsewhere.
+
+### Bacterial community diversity
+
+Before looking for specific taxa associated with culturable *Legionella*, we examined how the overall bacterial community structure compared across the four cities, and whether it differed depending on *Legionella* culture status of the samples.
+
+```{r richness betta random city cfu}
+# Richness test with betta and breakaway
+# Breakaway calculation - takes ages so will comment out once run
+# br_V4 <- breakaway(V4)
+
+# Save breakaway output to load quickly without having to re-run
+# saveRDS(br_V4, here("data", "process", "16S_breakaway.rds"))
+
+br_V4 <- readRDS(here("data", "process", "16S_breakaway.rds"))
+
+# Gather results into tibble with metadata
+br_V4_ord <- br_V4 %>% 
+  summary %>%
+  full_join(samples_V4, by = c("sample_names" = "SampleID")) %>%
+  mutate(City = fct_relevel(City, c("Athens", "Copenhagen", "Rome", "Warsaw"))) %>%
+  dplyr::arrange(City, Season_year, Location_in_building) %>%
+  mutate(sample_names = fct_inorder(sample_names)) # set the order of rows
+
+# First, I need to remove samples with NA in the CFU_L column and control the order of cities
+br_V4_filt <- br_V4_ord %>%
+  filter(!is.na(CFU_L)) %>%
+  mutate(City = factor(City, levels = c("Athens", "Copenhagen", "Rome", "Warsaw"))) %>%
+  as.data.frame()
+
+
+# City * CFU, blocked with Bldg_loc_ID (betta_random can't take two grouping variables, it)
+betta_blocked <- betta_random(formula = estimate ~ City * CFU_pres_abs + (1 | Bldg_loc_ID), ses = error, data = br_V4_filt)
+
+richness.betta.table <- betta_blocked$table
+
+
+# Pairwise comparisons between cities
+# Athens-Copenhagen
+lincomAC <- betta_lincom(betta_blocked,
+                       c(1, -1, 0, 0, 0, 0, 0, 0))
+
+# Athens-Rome
+lincomAR <- betta_lincom(betta_blocked,
+                       c(1, 0, -1, 0, 0, 0, 0, 0))
+
+# Athens-Warsaw
+lincomAW <- betta_lincom(betta_blocked,
+                       c(1, 0, 0, -1, 0, 0, 0, 0))
+
+# Copenhagen-Rome
+lincomCR <- betta_lincom(betta_blocked,
+                       c(0, 1, -1, 0, 0, 0, 0, 0))
+
+# Copenhagen-Warsaw
+lincomCW <- betta_lincom(betta_blocked,
+                       c(0, 1, 0, -1, 0, 0, 0, 0))
+
+# Rome-Warsaw
+lincomRW <- betta_lincom(betta_blocked,
+                       c(0, 0, 1, -1, 0, 0, 0, 0))
+
+# Table of all comparisons
+city.comps <- bind_rows("Athens - Copenhagen" = lincomAC,
+                        "Athens - Rome" = lincomAR,
+                        "Athens - Warsaw" = lincomAW,
+                        "Copenhagen - Rome" = lincomCR,
+                        "Copenhagen - Warsaw" = lincomCW,
+                        "Rome - Warsaw" = lincomRW, .id = "City pair")
+
+p.adjusted <- p.adjust(city.comps$`p-values`, method = "BH")
+
+rich.city.comps.adj <- bind_cols(city.comps,
+                            "Adjusted p-value" = p.adjusted)
+```
+
+Estimated population richness (number of ASVs) was significantly higher and more variable in Copenhagen and Warsaw, compared with Athens and Rome (Figure 2A, with statistical output in Tables S1 and S2). Taking into account the influence of the city, culture status also had a significant impact on richness, with culture-positive samples having, on average, `r richness.betta.table["CFU_pres_abspos", "Estimates"]` more estimated ASVs than culture-negative samples (p \< 0.001). However, there were significant interactions of city and culture status, indicating that the effect of these factors on richness was not consistent across the four cities. While *Legionella*-positive samples had higher bacterial community richness in Copenhagen, Athens, and, to a lesser extent, in Rome, the opposite was true in Warsaw, where *Legionella*-negative samples had higher richness.
+
+```{r shannon}
+# Shannon index
+diver <- microbiome::diversity(V4.rare, index = "all") %>%
+  as_tibble(rownames = "SampleID") %>%
+  left_join(samples_V4, by = "SampleID")
+
+shannon.lmer <- lmer(shannon ~ City * CFU_pres_abs + (1|Bldg_ID / Location_in_building), data = diver)
+
+shannon.anova <- anova(shannon.lmer) # ANOVA
+shannon.p <- shannon.anova$`Pr(>F)` # p values from ANOVA
+shannon.F <- shannon.anova$`F value` # F value from ANOVA
+shannon.Fsub <- paste0(shannon.anova$NumDF, ",", round(shannon.anova$DenDF, digits = 2))
+
+shannon.summary <- summary(shannon.lmer)$coefficients %>% as_tibble(rownames = " ")
+
+shannon.ranova <- ranova(shannon.lmer) %>% as_tibble()
+
+# Pairwise comparisons with lsmeans package
+shannon.pairwise <- lsmeans(shannon.lmer, pairwise ~ City)
+shannon.pairwise.table <- shannon.pairwise$contrasts %>%
+  as_tibble() %>%
+  rename("City pair" = contrast)
+
+```
+
+The Shannon diversity index, a measure of entropy, indicates how evenly the reads are distributed among the ASVs in a sample. Communities with a small number of dominant ASVs would have low Shannon indices, whereas more even community structures would result in higher Shannon indices. Here, despite the significant differences in richness among the cities and between culture-positive and culture-negative samples, Shannon index was similar across samples, indicating a common community structure in these environments (Figure 2B, Tables S3 and S4). Neither city (F~`r shannon.Fsub[1]`~ = `r shannon.F[1]`, p = `r shannon.p[1]`), culture status (F~`r shannon.Fsub[2]`~ = `r shannon.F[2]`, p = `r shannon.p[2]`), or their interaction (F~`r shannon.Fsub[3]`~ = `r shannon.F[3]`, p = `r shannon.p[3]`) had a significant influence on Shannon diversity.
+
+```{r nitrospira}
+# Nitrospira only ####
+V4.nitro <- subset_taxa(V4.RA, Genus == "Nitrospira")
+
+V4.nitro.melted <- as_tibble(phyloseq::psmelt(V4.nitro), rownames = "Rows") %>%
+  mutate(Abundance_adj = na_if(Abundance, '0')) %>%
+  mutate(City = factor(City, 
+                       levels = c("Athens", "Copenhagen", "Rome", "Warsaw"))) %>%
+  mutate(OTU = fct_reorder(as_factor(OTU), Abundance, mean, .desc = TRUE))
+
+nitro.by.city <- V4.nitro.melted %>%
+  filter(Abundance > 0) %>%
+  group_by(City) %>%
+  summarise(no.nitro.asvs = n(),
+            perc.total = sum(Abundance))
+```
+
+
+PCA on Aitchison distance clearly clustered the samples by their city (Figure 2C). Copenhagen and Warsaw formed looser, broader clusters than Rome and Athens, indicating more intra-city variability (which likely contributes to the much higher overall richness observed in each of those cities). The percent variance explained by the first two components is shown on the axes. PC1 clearly delineates all Copenhagen samples from the others, suggesting a greater difference in the bacterial communities in those samples compared with the other cities. In contrast, PC2 separates all four cities, pointing to the strong influence of local factors at the ASV level.
+
+The most influential ASVs contributing to the separation of Copenhagen samples along PC1 predominantly belong to the Nitrospira, with several ASVs within this genus being highly correlated (i.e. their arrows follow the same path). Copenhagen stood out as having a higher diversity of Nitrospira than the other cities, with `r filter(nitro.by.city, City == "Copenhagen")%>%pull(no.nitro.asvs)` ASVs falling into this genus, accounting for `r (filter(nitro.by.city, City == "Copenhagen")%>%pull(perc.total))`% of its 16S rRNA sequences. In comparison, Warsaw, Athens, and Rome had `r filter(nitro.by.city, City == "Warsaw")%>%pull(no.nitro.asvs)`, `r filter(nitro.by.city, City == "Athens")%>%pull(no.nitro.asvs)`, and `r filter(nitro.by.city, City == "Rome")%>%pull(no.nitro.asvs)` Nitrospira ASVs, respectively, accounting for `r (filter(nitro.by.city, City == "Warsaw")%>%pull(perc.total))`%, `r (filter(nitro.by.city, City == "Athens")%>%pull(perc.total))`%, and `r (filter(nitro.by.city, City == "Rome")%>%pull(perc.total))`% of sequences from each of those cities.
+
+```{r Aitchison distance calc, message=FALSE, warning=FALSE}
+# I first need to remove the CFU NA samples from Copenhagen, since they can't be included in the PERMANOVA model, and recode AHE to BB, since AHE is only in Copenhagen
+V4.trim <- subset_samples(V4, !is.na(CFU_pres_abs))
+
+# Make the compositional data set
+V4.trim.unique.main <- prune_taxa(taxa_sums(V4.trim) > 19, V4.trim)
+samples_trim <- as_tibble(sample_data(V4.trim.unique.main), rownames = "SampleID") %>%
+  mutate(Location_in_building = ifelse(Location_in_building == "AHE", 
+                                       "BB", Location_in_building))
+
+otus_V4 <- as.data.frame(t(otu_table(V4.trim.unique.main))) %>%
+  as_tibble(rownames = "OTU_ID")
+
+# Convert otu table to matrix and use ASV names as row names
+V4_m <- as.matrix(otus_V4[,-1])
+rownames(V4_m) <- otus_V4$OTU_ID
+
+# Zero count replacement
+# this function expects the samples to be in rows and OTUs to be in columns
+# so the matrix is transposed on input, and then back again on output
+V4_mz <- t(zCompositions::cmultRepl(t(V4_m), method="CZM", output="p-counts", suppress.print = TRUE))
+
+# convert to proportions by sample (columns) using the apply function
+V4_prop <- apply(V4_mz, 2, function(x){x/sum(x)})
+
+# make our compositional dataset with the center mean log ratio function
+# transpose the output in preparation for the PCA, which needs samples
+# in rows
+V4_comp <- t(apply(V4_prop, 2, function(x){log(x) - mean(log(x))}))
+
+#Generate distance matrix with get_dist from factoextra package
+clr_dist_matrix <- dist(V4_comp, method = "euclidean")
+
+# Run the PCA on the CLR-transformed data. Don't need to scale as the CLR
+# transform has already done that
+V4_PCA <- prcomp(V4_comp, scale = FALSE)
+
+```
+
+
+```{r adonis}
+#ADONIS test with strata option for repeated measures
+adonis.test.strata <- with(samples_trim, adonis(clr_dist_matrix ~ City * CFU_pres_abs, strata = Bldg_loc_ID, permutations = 10000))
+
+
+# Get p values
+adonis.p <- adonis.test.strata$aov.tab$`Pr(>F)`
+
+adonis.test.table <- adonis.test.strata$aov.tab %>% as_tibble(rownames = " ")
+
+# Get F subscripts and F values
+adonis.f.sub.city <- paste0(adonis.test.table$Df[1], ",", adonis.test.table$Df[4])
+adonis.f.sub.cfu <- paste0(adonis.test.table$Df[2], ",", adonis.test.table$Df[4])
+adonis.f.sub.citycfu <- paste0(adonis.test.table$Df[3], ",", adonis.test.table$Df[4])
+
+```
+
+```{r betadisper}
+# Dispersion tests
+## City
+#Dispersion test (city)
+dispr.city <- vegan::betadisper(clr_dist_matrix, samples_trim$City)
+dispr.city.test <- vegan::permutest(dispr.city, pairwise = TRUE, 
+                                    permutations = 10000)
+
+dispr.city.tab <- dispr.city.test$tab %>% as_tibble(rownames = " ")
+dispr.f.sub.city <- paste0(dispr.city.tab$Df[1], ",", dispr.city.tab$Df[2])
+
+dispr.city.table <- tibble(City = dispr.city$group, 
+                               Distance.to.centroid = dispr.city$distances,
+                               Sample = names(dispr.city$distances)) %>%
+  mutate(City = factor(City, 
+                       levels = c("Athens", "Copenhagen", "Rome", "Warsaw"))) 
+
+dispr.city.plot <- ggplot(dispr.city.table, aes(x = City, y = Distance.to.centroid, colour = City)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(size = 2, width = 0.2, alpha = 0.7) +
+  scale_colour_manual(values = cbPalette.cities) +
+  theme(legend.position = "none")
+
+## CFU
+#Dispersion test (CFU)
+dispr.cfu <- vegan::betadisper(clr_dist_matrix, samples_trim$CFU_pres_abs)
+dispr.cfu.test <- permutest(dispr.cfu, permutations = 10000)
+
+dispr.cfu.tab <- dispr.cfu.test$tab %>% as_tibble(rownames = " ")
+dispr.f.sub.cfu <- paste0(dispr.cfu.tab$Df[1], ",", dispr.cfu.tab$Df[2])
+
+dispr.cfu.plot <- tibble(CFU_pres_abs = dispr.cfu$group, 
+                               Distance.to.centroid = dispr.cfu$distances) %>%
+  ggplot(aes(x = CFU_pres_abs, y = Distance.to.centroid, colour = CFU_pres_abs)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(size = 2, width = 0.2, alpha = 0.7) +
+  scale_colour_manual(values = c("dark grey", cbPalette.CFU.pres.abs[2])) +
+  theme(legend.position = "none")
+
+## Building ID
+# Dispersion test and plot (Location)
+dispr.bldg <- vegan::betadisper(clr_dist_matrix, samples_trim$Bldg_ID)
+dispr.bldg.test <- permutest(dispr.bldg)
+
+dispr.bldg.distances <- tibble(Building = dispr.bldg$group, 
+                               Distance.to.centroid = dispr.bldg$distances) %>%
+  mutate(City = case_when(
+    str_starts(Building, "A_") ~ "Athens",
+    str_starts(Building, "C_") ~ "Copenhagen",
+    str_starts(Building, "R_") ~ "Rome",
+    str_starts(Building, "W_") ~ "Warsaw"
+  )) %>%
+  ggplot(aes(x = Building, y = Distance.to.centroid, colour = City)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(size = 2, width = 0.2, alpha = 0.7) +
+  scale_colour_manual(values = cbPalette.cities) +
+  theme(legend.position = "none")
+
+## Location in building
+# Dispersion test and plot (Location)
+dispr.location <- vegan::betadisper(clr_dist_matrix, samples_trim$Location_in_building)
+dispr.location.test <- permutest(dispr.location)
+
+dispr.location.distances <- tibble(Location = dispr.location$group, 
+                               Distance.to.centroid = dispr.location$distances,
+                               Sample = names(dispr.location$distances)) %>%
+  left_join(dispr.city.table %>% dplyr::select(Sample, City)) %>%
+  ggplot(aes(x = Location, y = Distance.to.centroid)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(aes(colour = City), size = 2, width = 0.2, alpha = 0.7) +
+  scale_colour_manual(values = cbPalette.cities) +
+  theme(legend.position = "none")
+
+```
+
+We used PERMANOVA, as implemented by the `adonis` function in the `vegan` package, to test the significance of groupings, blocking by building location ID to account for repeated measures (Table S5). The groupings were significantly influenced by both city (F~`r adonis.f.sub.city`~ = `r adonis.test.table$F.Model[1]`, R2 = `r adonis.test.table$R2[1]`, p = `r adonis.test.table$"Pr(>F)"[1]`) and *Legionella* culture status (F~`r adonis.f.sub.cfu`~ = `r adonis.test.table$F.Model[2]`, R2 = `r adonis.test.table$R2[2]`, p = `r adonis.test.table$"Pr(>F)"[2]`), but the interaction of these variables was not significant (F~`r adonis.f.sub.citycfu`~ = `r adonis.test.table$F.Model[3]`, R2 = `r adonis.test.table$R2[3]`, p = `r adonis.test.table$"Pr(>F)"[3]`).
+
+Since PERMANOVA is sensitive to differences in group dispersions, these were tested using the `betadisper` function in the R package `vegan` (Table S6). Group variances were significantly different for city (F~`r dispr.f.sub.city`~ = `r dispr.city.tab$F[1]`, p = `r dispr.city.tab$"Pr(>F)"[1]`), indicating that the variability of communities was greater in some cities than in others, which is apparent from the PCA (Figure 2C). The group variances for *Legionella* culture status were not significantly different (F~`r dispr.f.sub.cfu`~ = `r dispr.cfu.tab$F[1]`, p = `r dispr.cfu.tab$"Pr(>F)"[1]`), so the variability was similar for communities with and without culturable *Legionella*.
+
+```{r ASV intersection numbers}
+# Compute intersections to get numbers for the text
+# Vector of region names
+regions <- unique(samples_V4$City)
+
+for (i in regions){
+  # Subsample to each region
+  V4.region <- subset_samples(V4.rare, City == i)
+  V4.region <- prune_taxa(taxa_sums(V4.region) > 0, V4.region)
+  all.list <- taxa(V4.region)
+  assign(paste0("all.list.V4.", i), all.list)
+}
+
+all.list.V4.regions <- list(Athens = all.list.V4.Athens,
+                            Copenhagen = all.list.V4.Copenhagen,
+                            Rome = all.list.V4.Rome,
+                            Warsaw = all.list.V4.Warsaw)
+
+# Run UpSetR to get new data object that shows intersections
+intersect.asvs <- upset(fromList(all.list.V4.regions))
+
+# Pull out $New_data, which has the presence/absence of all ASVs across the four cities
+# Add a column that gives the row-wise sum, for filtering out city-specific ASV numbers
+intersect.summary <- intersect.asvs$New_data %>%
+  mutate(total = rowSums(across(where(is.numeric))))
+
+# Get number of ASVs shared by all four cities
+inter.all <- sum(intersect.summary$total == 4)
+
+# Get number of ASVs found only in one of the cities
+unique.all <- sum(intersect.summary$total == 1)
+
+# Get number of unique ASVs in each city
+unique.ath <- nrow(filter(intersect.summary, Athens == 1 & total == 1))
+unique.cope <- nrow(filter(intersect.summary, Copenhagen == 1 & total == 1))
+unique.rome <- nrow(filter(intersect.summary, Rome == 1 & total == 1))
+unique.wars <- nrow(filter(intersect.summary, Warsaw == 1 & total == 1))
+```
+
+Figure 3A shows the intersection of ASVs across the four cities. The rarefied data set used in this analysis (with samples normalised to `r nseqs` sequences) contained `r ntaxa(V4.rare)` ASVs. Of these, only `r inter.all` (`r inter.all/ntaxa(V4.rare) * 100`%) were observed in all four cities. Most ASVs, `r unique.all` in total, were detected in only one of the four cities, with `r unique.cope` of these unique to Copenhagen but only `r unique.rome` ASVs unique to Rome. Not only did the total richness vary markedly between pairs of cities, with Copenhagen and Warsaw having greater richness than Athens and Rome, but the proportion of ASVs unique to each city also differed: `r unique.cope / length(all.list.V4.Copenhagen) * 100`% of ASVs from Copenhagen were not detected anywhere else, whereas these proportions were `r unique.wars / length(all.list.V4.Warsaw) * 100`% in Warsaw, `r unique.ath / length(all.list.V4.Athens) * 100`% in Athens, and `r unique.rome / length(all.list.V4.Rome) * 100`% in Rome.
+
+
+
+### *Legionella* ASVs in the 16S rRNA data
+
+```{r Legionella 16S summary and table}
+# Select only ASVs classified as Legionella, then add their total RA to the metadata
+V4.leg.genus <- V4.RA %>% subset_taxa(Genus == "Legionella")
+
+leg.asvs <- as.data.frame(tax_table(V4.leg.genus)[, 6:7]) %>%
+  mutate(total.abund = taxa_sums(V4.leg.genus)) %>%
+  arrange(desc(total.abund))
+
+leg.sp <- leg.asvs %>% filter(!is.na(Species)) %>% nrow()
+
+```
+
+```{r Legionella genus prop prevalence}
+# Relative abundance of Legionella genus sequences across the whole 16S data
+legionella.tot.perc <- taxa_all %>%
+  filter(Genus == "Legionella") %>%
+  dplyr::select(perc.overall) %>% sum()
+
+samples_V4 <- samples_V4 %>%
+  mutate(City = factor(City, levels = c("Rome", "Warsaw", "Athens", "Copenhagen")))
+
+# Perc samples in each city with Legionella in the 16S data
+pres.abs.leg <- samples_V4 %>%
+  mutate(Leg_genus_pres_abs = case_when(
+    Leg_genus_sum == 0 ~ "neg",
+    Leg_genus_sum > 0 ~ "pos"))
+
+leg.comp.table <- table(pres.abs.leg$Leg_genus_pres_abs, pres.abs.leg$CFU_pres_abs)
+
+perc.leg.by.city <- pres.abs.leg %>%
+  group_by(City, Leg_genus_pres_abs) %>%
+  summarise(n = n()) %>%
+  pivot_wider(names_from = Leg_genus_pres_abs, values_from = n, names_prefix = "Leg.16S.") %>%
+  mutate(perc.pos = Leg.16S.pos / (Leg.16S.pos + Leg.16S.neg) * 100)
+
+city.leg.perc <- perc.leg.by.city %>% pull(perc.pos, name = City)
+
+leg.sum.pos <- sum(perc.leg.by.city$Leg.16S.pos)
+leg.sum.neg <- sum(perc.leg.by.city$Leg.16S.neg)
+```
+
+```{r}
+# Get Legionella unique and shared numbers from upsetR
+# Select only ASVs classified as Legionella
+V4.leg.genus.melt <- V4.leg.genus %>%
+  psmelt()
+
+V4.leg.genus.grouped <- V4.leg.genus.melt %>%
+  group_by(City, OTU) %>%
+  summarise(n = n(),
+            Tot.with.OTU = sum(Abundance > 0),
+            Prevalence = sum(Abundance > 0) / n(),
+            Mean.abund = mean(Abundance),
+            Tot.abund = sum(Abundance)) %>%
+  filter(Tot.with.OTU > 0)
+
+# Pull out a character vector for each city, with the names of Legionella ASVs detected there
+leg.athens <- V4.leg.genus.grouped %>%
+  filter(City == "Athens") %>% pull(OTU) %>% as.character()
+
+leg.rome <- V4.leg.genus.grouped %>%
+  filter(City == "Rome") %>% pull(OTU) %>% as.character()
+
+leg.warsaw <- V4.leg.genus.grouped %>%
+  filter(City == "Warsaw") %>% pull(OTU) %>% as.character()
+
+leg.copenh <- V4.leg.genus.grouped %>%
+  filter(City == "Copenhagen") %>% pull(OTU) %>% as.character()
+
+# Make a list of all four city Legionella vectors
+leg.all.list <- list(Athens = leg.athens,
+                     Copenhagen = leg.copenh,
+                     Rome = leg.rome,
+                     Warsaw = leg.warsaw)
+
+# Run UpSetR to generate intersection table
+intersect.leg.asvs <- upset(fromList(leg.all.list))
+
+# Pull out $New_data, which has the presence/absence of all ASVs across the four cities
+# Add a column that gives the row-wise sum, for filtering out city-specific ASV numbers
+intersect.leg.summary <- intersect.leg.asvs$New_data %>%
+  mutate(total = rowSums(across(where(is.numeric))))
+
+# Get number of ASVs shared by all four cities
+inter.leg.all <- sum(intersect.leg.summary$total == 4)
+
+# Get number of ASVs found only in one of the cities
+unique.leg.all <- sum(intersect.leg.summary$total == 1)
+
+# Get number of unique ASVs in each city
+unique.leg.ath <- nrow(filter(intersect.leg.summary, Athens == 1 & total == 1))
+unique.leg.cope <- nrow(filter(intersect.leg.summary, Copenhagen == 1 & total == 1))
+unique.leg.rome <- nrow(filter(intersect.leg.summary, Rome == 1 & total == 1))
+unique.leg.wars <- nrow(filter(intersect.leg.summary, Warsaw == 1 & total == 1))
+
+```
+
+In the rarefied 16S rRNA data set, `r nrow(leg.asvs)` ASVs were classified as *Legionella* at the genus level, accounting for `r legionella.tot.perc * 100`% of sequences. `r leg.sp` of these *Legionella* genus ASVs could be further classified to species level. *Legionella* genus ASVs were present in `r leg.sum.pos` samples overall (`r leg.sum.pos / nrow(samples_V4) * 100`%), and in the majority of samples from each city: `r city.leg.perc["Athens"]`%, `r city.leg.perc["Copenhagen"]`%, `r city.leg.perc["Rome"]`% and `r city.leg.perc["Warsaw"]`% of samples from Athens, Copenhagen, Rome and Warsaw, respectively.
+
+Most of the *Legionella* genus ASVs, `r unique.leg.all` out of `r nrow(leg.asvs)`, were unique to one of the four cities. Only `r inter.leg.all` *Legionella* ASVs were detected in all four cities (Figures 3B and 4), and these could all be classified to species level: ASV142 (*L. pneumophila*), ASV425 (*L. anisa*), and ASV1223 (*L. waltersii*). Although Rome had the lowest total bacterial ASV richness and the smallest number of unique bacterial ASVs of any city (Figure 3A), it had the largest richness (`r length(leg.rome)` ASVs) and the greatest number of city-specific *Legionella* ASVs (`r unique.leg.rome`) (Figure 3B). Overall, `r length(leg.rome)/length(all.list.V4.Rome)*100`% of ASVs detected in Rome were classified as *Legionella*, whereas this proportion was `r length(leg.athens)/length(all.list.V4.Athens)*100`, `r length(leg.warsaw)/length(all.list.V4.Warsaw)*100`, and `r length(leg.copenh)/length(all.list.V4.Copenhagen)*100`% in Athens, Warsaw, and Copenhagen, respectively.
+
+The abundance and prevalence of all *Legionella* ASVs present in five or more samples is shown in Figure 4. Most of the *Legionella* ASVs that could be resolved to species level were detected in more than one city, though Copenhagen stood out as rarely having any of these shared, species-resolved ASVs. In many cases, for example in Athens, the specific *Legionella* ASVs detected differed markedly between buildings rather than being distributed evenly across all the samples from that city, and while some buildings (e.g. B1) had a diverse group of *Legionella* ASVs, others (e.g. B2) had only one that was rarely seen elsewhere. A building-specific pattern was less clear in Copenhagen, which had a diverse (albeit low-abundance) population of city-specific ASVs that occurred across all three buildings that were sampled.
+
+Overall, the most abundant *Legionella* genus ASV, `r row.names(leg.asvs)[1]`, was further classified as *L. pneumophila*, followed by `r row.names(leg.asvs)[2]`, which was unclassified at the species level, though BLAST search against GenBank showed it has 100% similarity to both *L. taurinensis* and *L. rubrilucens*. Two rarer ASVs, ASV808 and ASV4571, were also classified as *L. pneumophila*. The latter was detected in a single sample from Rome, but ASV808, which differs from ASV142 by a single nucleotide, was found in all cities except Copenhagen, though it was particularly prevalent in Athens Building 2, which, unlike all other sampled buildings in this study, had no other *Legionella* sequences (Figure 4).
+
+
+### *Legionella* culture counts versus presence in 16S rRNA data
+
+```{r Legionella numbers, message=FALSE}
+perc.cfu.by.city <- samples_V4 %>%
+  group_by(City, CFU_pres_abs) %>%
+  summarise(n = n()) %>%
+  pivot_wider(names_from = CFU_pres_abs, values_from = n, names_prefix = "cfu.") %>%
+  mutate(perc.pos = cfu.pos / (cfu.pos + cfu.neg) * 100)
+
+city.perc <- perc.cfu.by.city %>% pull(perc.pos, name = City)
+
+sum.na <- sum(perc.cfu.by.city$cfu.NA, na.rm = TRUE)
+sum.pos <- sum(perc.cfu.by.city$cfu.pos)
+sum.neg <- sum(perc.cfu.by.city$cfu.neg)
+
+```
+
+```{r Legionella CFU glmer with zi Poisson, message=FALSE, warning=FALSE}
+samples_V4_cfu <- samples_V4 %>%
+  filter(!is.na(CFU_pres_abs)) %>%
+  mutate(City = factor(City, levels = c("Copenhagen", "Athens", "Rome", "Warsaw")),
+         CFU_L = as.integer(round(CFU_L, digits = 0)))
+
+# No zero inflation, no mixed effects
+mod.poisson <- glmmTMB(CFU_L ~ City, zi = ~ 0,
+                 data = samples_V4_cfu, family = poisson)
+
+# summary(mod.poisson)
+
+# Zero inflation, no mixed effects
+mod.poisson.zi.simple <- glmmTMB(CFU_L ~ City, zi = ~ 1,
+                 data = samples_V4_cfu, family = poisson)
+
+# summary(mod.poisson.zi.simple)
+
+# Zero inflation with City, no mixed effects
+mod.poisson.zi.city <- glmmTMB(CFU_L ~ City, zi = ~ City,
+                 data = samples_V4_cfu, family = poisson)
+
+# summary(mod.poisson.zi.city)
+
+
+# Simple zero inflation, mixed effects
+mod.poisson.me.zi.simple <- glmmTMB(CFU_L ~ City + (1|Bldg_ID/Location_in_building), zi = ~ 1,
+                 data = samples_V4_cfu, family = poisson)
+
+# summary(mod.poisson.me.zi.simple)
+
+
+# Zero inflation on City, mixed effects
+mod.poisson.me.zi.city <- glmmTMB(CFU_L ~ City + (1|Bldg_ID/Location_in_building), 
+                  zi = ~ City,
+                 data = samples_V4_cfu, family = poisson)
+
+cfu.L.summary <- summary(mod.poisson.me.zi.city)
+
+# Get just the model coefficients
+cfu.L.coeffs <- cfu.L.summary$coefficients$cond
+
+
+# Zero inflation on City plus random effects, mixed effects
+mod.poisson.me.zi.cityme <- glmmTMB(CFU_L ~ City + (1|Bldg_ID/Location_in_building), 
+                  zi = ~ .,
+                 data = samples_V4_cfu, family = poisson)
+
+cfu.L.summary <- summary(mod.poisson.me.zi.cityme)
+
+# Get just the model coefficients
+cfu.L.coeffs <- cfu.L.summary$coefficients$cond
+
+# Comparison of AIC (lower is better)
+cfu.model.comp.table <- AIC(mod.poisson, mod.poisson.zi.simple, mod.poisson.zi.city, mod.poisson.me.zi.simple, mod.poisson.me.zi.city, mod.poisson.me.zi.cityme)
+
+
+cfu.model.comp.anova <- anova(mod.poisson.me.zi.city, mod.poisson.me.zi.cityme)
+
+
+# Final model
+mod.poisson.me.zi.city.bldg <- glmmTMB(CFU_L ~ City + (1|Bldg_ID / Location_in_building), 
+                  zi = ~ .,
+                 data = samples_V4_cfu, family = poisson)
+
+leg.cfu.mod.summary <- summary(mod.poisson.me.zi.city.bldg)
+
+# Pairwise comps?
+cfu.pairwise.city <- lsmeans(mod.poisson.me.zi.city.bldg, pairwise ~ City)
+
+```
+
+All samples were tested for culturable *Legionella*, except the first `r sum.na` samples from Copenhagen, for which *Legionella* culture counts were not collected. Of the `r nrow(samples_V4) - sum.na` samples with culture data, `r sum.pos` (`r sum.pos / (sum.pos + sum.neg) * 100`%) had culturable *Legionella*. The proportion of *Legionella* culture positive samples differed widely among the four cities: `r city.perc["Copenhagen"]`% from Copenhagen, `r city.perc["Rome"]`% from Rome, `r city.perc["Athens"]`% from Athens, and `r city.perc["Warsaw"]`% from Warsaw. Culture counts in the *Legionella*-positive samples also varied widely, over five orders of magnitude (Figure 5A). The difference in culturable *Legionella* CFU/L was generally not significant among the four cities, except that Copenhagen had significantly lower CFU/L values than Warsaw in pairwise comparisons (zero-inflated GLMM with Poisson distribution, t-ratio~153~ = -3.023, p = 0.015, Tables S7, S8, S9). The building and compartment random effects improved model fit, as did modelling the zero counts separately by City and random effects, suggesting that the distribution of zero values (i.e. *Legionella* culture-negative samples) differed among the cities (as observed in Figure 5A), and also among the buildings and compartments.
+
+```{r Legionella genus prop 16S data lmm}
+# Are Legionella genus prop in 16S significantly different among the cities?
+lmm.leg.gen <- lmer(Leg_genus_sum ~ City * CFU_pres_abs + (1|Bldg_ID / Location_in_building), data = samples_V4)
+
+leg.gen.anova <- anova(lmm.leg.gen) # ANOVA
+leg.gen.p <- leg.gen.anova$`Pr(>F)` # p values from ANOVA
+leg.gen.F <- leg.gen.anova$`F value` # F value from ANOVA
+leg.gen.summary <- summary(lmm.leg.gen)
+
+
+
+leg.gen.Fsub <- paste0(leg.gen.anova$NumDF, ",", round(leg.gen.anova$DenDF, digits = 2))
+
+# Get perc variance explained by random effects
+leg.gen.var <- data.frame(leg.gen.summary$varcor) %>% pull(vcov, name = grp)
+leg.gen.perc.bldg.loc.ID <- leg.gen.var["Location_in_building:Bldg_ID"] / (leg.gen.var["Location_in_building:Bldg_ID"] + leg.gen.var["Bldg_ID"] + leg.gen.var["Residual"]) * 100
+
+leg.gen.ranova <- ranova(lmm.leg.gen)
+leg.gen.comp.p <- leg.gen.ranova$`Pr(>Chisq)`
+
+rome.high.leg.prop <- samples_V4 %>%
+  filter(Leg_genus_sum > 0.01 & City == "Rome") %>%
+  dplyr::select(City, Bldg_ID, Location_in_building, Leg_genus_sum, CFU_L) %>%
+  arrange(desc(Leg_genus_sum))
+
+# Pairwise City comparisons
+leg.gen.pairwise <- lsmeans(lmm.leg.gen, pairwise ~ City)
+```
+
+In `r leg.comp.table["neg", "pos"]` instances, samples were culture positive but had no detectable *Legionella* spp. in the sequence data (the limit of detection in the sequence data is determined by the sequencing depth, here normalised to `r nseqs` sequences per sample, giving a LOD of `r 1/nseqs*100`%). Conversely, `r leg.comp.table["pos", "neg"]` samples were culture negative but had detectable *Legionella* spp. in the sequence data. `r leg.comp.table["neg", "neg"]` samples were below the detection limits in both culturing and sequencing, whereas `r leg.comp.table["pos", "pos"]` had detectable *Legionella* in both approaches.
+
+While the relative abundance of *Legionella* spp. sequences in the 16S rRNA data did not differ significantly across all four cities (F~`r leg.gen.Fsub[1]`~ = `r leg.gen.F[1]`, p = `r leg.gen.p[1]`), Rome exhibited a different pattern from the others (Figure 5B). In the other cities, the proportion of *Legionella* sequences in each sample did not exceed 1% (with one exception from Athens at 1.06%), but Rome had `r nrow(rome.high.leg.prop)` samples with *Legionella* above this threshold, including `r rome.high.leg.prop %>% filter(Leg_genus_sum > 0.05) %>% nrow()` samples with *Legionella* sequences exceeded 5%, with one reaching the highest proportion observed in any sample, `r max(rome.high.leg.prop$Leg_genus_sum) * 100`%.
+
+Whether the samples were culture-positive or culture-negative had no significant effect on the proportion of sequences that were placed in the genus *Legionella* (F~`r leg.gen.Fsub[2]`~ = `r leg.gen.F[2]`, p = `r leg.gen.p[2]`), and this was the case in all cities, as there was no significant interaction between city and presence/absence of culturable *Legionella* (F~`r leg.gen.Fsub[2]`~ = `r leg.gen.F[2]`, p = `r leg.gen.p[2]`). Detailed model outputs are shown in Table S10. The random effects terms did not significantly improve the model (p = `r leg.gen.comp.p[2]` and `r leg.gen.comp.p[3]` for building and compartment ID, respectively), indicating that these factors do not explain a significant amount of the variance in *Legionella* sequence proportions. These findings held regardless of whether the culture data were expressed in binary terms (pos/neg), in discrete categorical terms (log10 bins) or on a continuous scale as CFU/L. For subsequent analyses, only the presence or absence of any culturable *Legionella* was considered, not the CFU/L obtained.
+
+
+```{r L.pneumo prop all 16S data lmm}
+# Are L.pneumo values themselves significantly different among the cities?
+lmm.leg.sp <- lmer(Leg_pneumo_sum ~ City * CFU_pres_abs + (1|Bldg_ID / Location_in_building), data = samples_V4)
+
+leg.sp.anova <- anova(lmm.leg.sp) # ANOVA
+leg.sp.p <- leg.sp.anova$`Pr(>F)` # p values from ANOVA
+
+leg.sp.summary <- summary(lmm.leg.sp)
+
+# Get perc variance explained by random effects
+leg.sp.var <- data.frame(leg.sp.summary$varcor) %>% pull(vcov, name = grp)
+leg.sp.perc.bldg.loc.ID <- leg.sp.var["Bldg_ID"] / (leg.sp.var["Bldg_loc_ID"] + leg.sp.var["Bldg_ID"] + leg.sp.var["Residual"]) * 100
+
+leg.sp.ranova <- ranova(lmm.leg.sp)
+leg.sp.comp.p <- leg.sp.ranova$`Pr(>Chisq)`
+
+# lsmeans(lmm.leg.sp, pairwise ~ City)
+```
+
+```{r L.pneumo prop in Legionella seqs}
+# And now with proportion L. pneumo in the Legionella seqs
+samples_V4_prop <- samples_V4 %>%
+  filter(Leg_genus_sum > 0) %>%
+  mutate(prop_pneumo = Leg_pneumo_sum / Leg_genus_sum * 100)
+
+# Are L.pneumo proportions significantly different among the cities?
+lmm.leg.prop <- lmer(prop_pneumo ~ City * CFU_pres_abs + (1|Bldg_ID / Location_in_building), data = samples_V4_prop)
+
+leg.prop.anova <- anova(lmm.leg.prop) # ANOVA
+leg.prop.p <- leg.prop.anova$`Pr(>F)` # p values from ANOVA
+
+leg.prop.summary <- summary(lmm.leg.prop)
+leg.prop.diff <- leg.prop.summary$coefficients["CFU_pres_abspos", "Estimate"]
+
+leg.prop.F <- leg.prop.anova$`F value` # F value from ANOVA
+
+leg.prop.Fsub <- paste0(leg.prop.anova$NumDF, ",", round(leg.prop.anova$DenDF, digits = 2))
+
+
+# Get perc variance explained by random effects
+leg.prop.var <- data.frame(leg.prop.summary$varcor) %>% pull(vcov, name = grp)
+leg.prop.perc.bldg.loc.ID <- leg.prop.var["Bldg_ID"] / (leg.prop.var["Bldg_loc_ID"] + leg.prop.var["Bldg_ID"] + leg.prop.var["Residual"]) * 100
+
+leg.prop.ranova <- ranova(lmm.leg.prop)
+leg.prop.comp.p <- leg.prop.ranova$`Pr(>Chisq)`
+
+# Pairwise City comparisons
+# lsmeans(lmm.leg.prop, pairwise ~ City)
+```
+
+Culturing is biased towards *L. pneumophila*, so next, we examined the proportion of sequences that classified specifically as *L. pneumophila*, rather than all those falling into the genus *Legionella*. As a proportion of all 16S rRNA sequences, there was no significant difference in *L. pneumophila* among the cities or between culture-positive and culture-negative samples (Table S10). 
+
+However, differences were observed when the *L. pneumophila* proportion was calculated not from all 16S rRNA sequences, but from those classifying as the genus *Legionella* (Figure 5C). Copenhagen had the lowest proportion of *L. pneumophila*, indicating that the majority of *Legionella* sequences detected in that city were from other species (as also seen in Figure 4). In the other cities, some samples had only *L. pneumophila* sequences, some had no *L. pneumophila* sequences among their *Legionella* spp. data, and many had a mix of *L. pneumophila* and other species. Given the variability, the differences among the cities was not significant (F~`r leg.prop.Fsub[1]`~ = `r leg.prop.F[1]`, p = `r leg.prop.p[1]`), but taking into account the influence of the city and the random effects (building and compartment), the culture status of the sample (*Legionella*-positive or negative) had a significant influence on the proportion of *Legionella* genus sequences that were further classified as *L. pneumophila* (Table S11), with the proportion in culture-positive samples being, on average, `r leg.prop.diff`% higher than in culture-negative samples.
+
+Despite this agreement between culture status and proportion of *Legionella* sequences classified as *L. pneumophila*, we used the culture status rather than sequence data to delineate between samples with and without *Legionella* to address our main question: whether other members of the bacterial communities are associated (positively or negatively) with *Legionella*. Sequencing total environmental DNA can detect dead, nonviable, and dormant cells, whereas culturing confirms the presence of viable *Legionella*.
+
+
+### Associations of bacterial taxa with *Legionella*
+
+```{r}
+# Exclude samples with no CFU data
+V4.cfu <- V4 %>% subset_samples(!is.na(CFU_pres_abs))
+V4.cfu <- prune_taxa(taxa_sums(V4.cfu) > 49, V4.cfu)
+
+V4.cfu.RA <- transform(V4, "compositional")
+
+# This takes ages so will save the object and comment out the command once it's run
+# aldex2_cfu <- aldex(data.frame(t(otu_table(V4.cfu))), as.character(sample_data(V4.cfu)$CFU_pres_abs), test="t", effect = TRUE, denom="all")
+
+# saveRDS(aldex2_cfu, here("data", "process", "aldex_cfu_pres_abs.rds"))
+aldex2_cfu <- readRDS(here("data", "process", "aldex_cfu_pres_abs.rds"))
+
+
+# Add taxonomic labels to aldex2 output
+taxa_info_v4 <- data.frame(tax_table(V4.cfu)) %>% 
+  rownames_to_column(var = "OTU")
+
+# Trimmed table for display
+# Add taxa sums and means, replace Genus NAs with closest classification
+sig_aldex2_cfu <- aldex2_cfu %>%
+  rownames_to_column(var = "OTU") %>%
+  filter(wi.eBH < 0.05) %>%
+  arrange(effect, wi.eBH) %>%
+  dplyr::select(OTU, effect, wi.eBH) %>%
+  left_join(taxa_info_v4) %>%
+  left_join(tibble(OTU = names(taxa_sums(V4.cfu.RA)),
+                   taxa_sums_RA = taxa_sums(V4.cfu.RA),
+                   mean_taxa_RA = taxa_sums_RA / nsamples(V4.cfu.RA))) %>%
+  mutate(Genus_adj = case_when(
+    is.na(Class) ~ paste0("uncl. phylum ", Phylum),
+    is.na(Order) ~ paste0("uncl. class ", Class),
+    is.na(Family) ~ paste0("uncl. order ", Order),
+    is.na(Genus) ~ paste0("uncl. family ", Family),
+    TRUE ~ Genus )) %>%
+  dplyr::arrange(Phylum, Class, Order) %>%
+  mutate(Class = fct_inorder(Class)) %>%
+  mutate(Genus_adj = fct_inorder(Genus_adj)) %>%
+  mutate(Genus = fct_inorder(Genus))
+
+no.sig.asvs <- nrow(sig_aldex2_cfu)
+no.neg.asvs <- sig_aldex2_cfu %>% filter(effect < 0) %>% nrow()
+no.pos.asvs <- sig_aldex2_cfu %>% filter(effect > 0) %>% nrow()
+
+
+# Genus-level agglomeration
+V4.cfu.genus <- V4 %>% subset_samples(!is.na(CFU_pres_abs)) %>%
+  tax_glom("Genus", NArm = FALSE)
+
+# Before removing low-abundance genera, get RA for plot bubble sizes
+V4.cfu.genus.RA <- transform(V4.cfu.genus, "compositional")
+
+V4.cfu.genus <- prune_taxa(taxa_sums(V4.cfu.genus) > 49, V4.cfu.genus)
+
+# This takes ages so will save the object and comment out the command once it's run
+# aldex2_cfu_genus <- aldex(data.frame(t(otu_table(V4.cfu.genus))), as.character(sample_data(V4.cfu.genus)$CFU_pres_abs), test="t", effect = TRUE, denom="all")
+
+# saveRDS(aldex2_cfu_genus, here("data", "process", "aldex_cfu_genus_pres_abs.rds"))
+aldex2_cfu_genus <- readRDS(here("data", "process", "aldex_cfu_genus_pres_abs.rds"))
+
+
+# Add taxonomic labels to aldex2 output
+taxa_info_v4_genus <- data.frame(tax_table(V4.cfu.genus)) %>% 
+  rownames_to_column(var = "OTU")
+
+# Trimmed table for display
+# Add taxa sums and means, replace Genus NAs with closest classification
+sig_aldex2_cfu_genus <- aldex2_cfu_genus %>%
+  rownames_to_column(var = "OTU") %>%
+  filter(wi.eBH < 0.05) %>%
+  arrange(effect, wi.eBH) %>%
+  dplyr::select(OTU, effect, wi.eBH) %>%
+  left_join(taxa_info_v4_genus) %>%
+  left_join(tibble(OTU = names(taxa_sums(V4.cfu.genus.RA)),
+                   taxa_sums_RA = taxa_sums(V4.cfu.genus.RA),
+                   mean_taxa_RA = taxa_sums_RA / nsamples(V4.cfu.genus.RA))) %>%
+  mutate(Genus_adj = case_when(
+    is.na(Class) ~ paste0("uncl. phylum ", Phylum),
+    is.na(Order) ~ paste0("uncl. class ", Class),
+    is.na(Family) ~ paste0("uncl. order ", Order),
+    is.na(Genus) ~ paste0("uncl. family ", Family),
+    TRUE ~ Genus )) %>%
+  filter(!is.na(Genus)) %>%
+  dplyr::arrange(Phylum, Class, Order) %>%
+  mutate(Class = fct_inorder(Class)) %>%
+  mutate(Genus_adj = fct_inorder(Genus_adj)) %>%
+  mutate(Genus = fct_inorder(Genus))
+
+no.sig.genera <- nrow(sig_aldex2_cfu_genus)
+no.neg.genera <- sig_aldex2_cfu_genus %>% filter(effect < 0) %>% nrow()
+no.pos.genera <- sig_aldex2_cfu_genus %>% filter(effect > 0) %>% nrow()
+```
+
+Despite the variability in the sample types and the differences in community diversity among the four cities, differential abundance analysis was able to identify `r no.sig.asvs` specific ASVs (Figure 6A) that are negatively or positively associated with culturable *Legionella*. Only ASVs present across a relatively large number of samples could show significant associations, and given the variability among cities at the ASV level, a relatively small number met this conditions. We therefore also clustered into genera to identify taxa that might fulfill similar roles in different places, despite regional variations in the exact species and strains within those genera. We identified `r no.sig.genera` specific genera (Figure 6B) with a significant association, not including those unclassified at the genus level (since the agglomeration step risks grouping together quite different unclassified taxa that share the family level).
+
+#### Negative associations
+
+At the ASV level, only ASV126 was identified as having a significantly negative association with culturable *Legionella*. It was classified as genus Staphylococcus (Phylum Firmicutes, Class Bacilli), but could not be resolved to species level as it showed 100% identity to *S. capitis*, *S. epidermidis*, and *S. capra* when searched against GenBank.
+
+When ASVs were grouped at the genus level, more negative associations were identified, with `r no.neg.genera` named genera having a significant negative association with culturable *Legionella* (Figure 6B). These include the Gammaproteobacterial genera Pseudomonas and Acinetobacter (Figure 7A), the Alphaproteobacterial genera Hyphomicrobium and Sphingopyxis, as well as the genus Staphylococcus.
+
+#### Positive associations
+
+```{r}
+nitro.asvs <- taxa_all %>%
+  filter(Genus == "Nitrospira")
+
+staph.asvs <- taxa_all %>%
+  filter(Genus == "Staphylococcus")
+```
+
+Numerous individual ASVs and genera were positively associated with culturable *Legionella* (Figure 6). At the ASV level, ASV142, *Legionella pneumophila*, had a positive association overall despite its unusual abundance in the culture-negative samples from Rome. Even though the proportion of all *Legionella* genus sequences could not be tied to culturable status, this specific *L. pneumophila* ASV could.
+
+Of the `r nrow(nitro.asvs)` ASVs classified as the nitrite oxidising genus Nitrospira, four were positively associated with culturable *Legionella*, and their combined relative abundance across the cities is shown in Figure 7B. Despite the genus Nitrospira forming a large proportion of the bacterial communities in Copenhagen, more so than in the other cities, these four specific *Legionella*-associated Nitrospira ASVs were hardly detected in samples from there (Figure 7, Figure S3), and they were not among the Nitrospira ASVs that contributed to the separation of Copenhagen samples in the PCA (Figure 2C). The specific Nitrospira ASVs that were abundant in Copenhagen were not positively associated with *Legionella*.
+
+At the genus level, `r no.pos.genera` genera had a positive association with culturable *Legionella*. These included the genus Nitrospira overall, as well as the nitrifying genus oc32, from the family Nitrosomonadaceae. Craurococcus and Reyranella, genera known to be associated with amoeba, were also significantly associated with *Legionella* culture-positive samples, as were Bdellovibrio and the Acidobacterial genera Paludibaculum and Bryobacter.
+
+## Discussion
+*Legionella* proliferation in engineered water systems, including premise plumbing, is a widescale problem with measurable impacts on human health. Understanding the ecology of *Legionella* in these systems, notably its interactions with other microbial community members, is key to developing more robust and sustainable control measures. Here, we showed that numerous bacterial community members displayed significantly different abundance patterns depending on whether culturable *Legionella* were present or not in a premise plumbing water sample. Taxa that showed a positive association with culturable *Legionella* included members of ameoba-associated genera (*Reyranella* and *Craurococcus-Caldovatus*), those involved in nitrogen cycling (*Nitrospira*, *Denitratisoma*, *Nitrosomonadaceae*), and the predatory genus *Bdellovibrio*. Other taxa, notably *Staphylococcus*, *Pseudomonas*, and *Acinetobacter*, were more abundant in samples without culturable *Legionella*, suggesting a possible inhibitory effect. These positive and negative relationships held across the four European cities and across the different buildings and plumbing compartments. This is important because developing better control measures, including probiotic approaches, will require an understanding of ecological relationships that can be generalised across different systems.
+
+The differences between culture-positive and culture-negative samples were not limited to individual bacterial genera and ASVs. At the community structure level, although we found no significant differences in Shannon index between culture positive and negative samples, pointing to similar dominance/evenness structures (also reported in Canadian cooling towers by [@Paranjape2020a]), the estimated community richness differed significantly, with higher richness overall in *Legionella* culture-positive samples. The same observation was reported in cooling towers across the USA, where bacterial community richness was positively correlated with detectable *Legionella* [@Llewellyn2017]. Why greater community richness is associated with a higher probability of growing *Legionella* is unclear. It could point to a lower concentration of residual disinfectant in those compartments, allowing not only *Legionella* but other taxa to flourish. This would not, however, explain the difference observed in Copenhagen, since no disinfection is used there but *Legionella*-positive samples had, on the whole, richer communities than *Legionella*-negative ones. Perhaps the greater community richness in culture-positive samples is due to *Legionella*'s requirement for specific amino acids, which might be in greater supply in richer communities, where several different taxa can supply them. However, the effect of *Legionella* culture status on richness in our study was complicated by a significant interaction with the city, meaning the effect was not observed equally across all cities. Indeed, it was reversed in Warsaw, where culture-negative samples had higher estimated richness.
+
+The differential abundance signal from positively and negatively associated taxa was detectable despite there being significant differences in premise plumbing bacterial communities across the four cities, with relatively little overlap in ASVs, most of which were city-specific. Total richness and number of city-specific ASVs were highest in Copenhagen and Warsaw, but much lower in Athens and Rome. Drinking water systems without a disinfectant residual are known to be richer than those with a residual [@Bautista2016; @Thom2022], so the absence of chemical disinfection in Copenhagen's public water supply likely explains why it had the richest premise plumbing communities, the largest number of city-specific ASVs, the greatest dispersion among samples, and the greatest beta diversity separation from the other cities, accounting for 13.5% of variance across the data set. Why Warsaw has such high richness compared with Athens and Rome is less clear, as it treats its water with [chlorine dioxide?]. The higher richness across the city could be due to a more heterogeneous distribution system and less stringent temperature controls in the buildings that were sampled.
+
+The coarse taxonomic composition of premise plumbing communities was similar in these four cities, with strong dominance of *Proteobacteria* classes *Gamma-* and *Alphaproteobacteria*. This is in line with other studies of water distribution systems [@Thom2022]. At finer taxonomic resolution, there were some noticeable differences among the four cities, with *Nitrospira* abundance and diversity being much higher in Copenhagen than elsewhere, but *Craurococcus-Caldovatus* and *Blastomonas* being almost absent from there despite being relatively abundant in the other cities. Furthermore, the abundance and diversity of sequences classifying as *Legionella* varied across the four cities. Rome had the highest number of *Legionella* ASVs overall, the highest number of city-specific *Legionella* ASVs, and the highest proportions of *Legionella* in the 16S rRNA sequence data, with many samples exceeding 1% (with one sample having 17% of sequences classified as *Legionella*). Additionally, many of the relatively abundant *Legionella* ASVs in Rome were named taxa, including Lp, which are more likely to be involved in human disease than rare, uncharacterised species. In contrast, most *Legionella* ASVs detected in Copenhagen were at low relative abundance, were unnamed and uncharacterised, and were city-specific. There was a near absence of the main named species that cause most human illness. The *Legionella* ASV findings in these two cities sit in contrast to the total community richness and diversity, which was low in Rome and high in Copenhagen. This suggests that rich bacterial communities provide some competition against or dilution of *Legionella* species, but this would contradict our finding that samples with richer total communities were more likely to have culturable *Legionella* (albeit not in all cities).
+
+This contradiction could be due to the absence of a correlation between culturable *Legionella* and abundance in the 16S rRNA sequence data. A similar mismatch between *Legionella* as detected by PCR versus in pure culture was also observed in US cooling towers [@Llewellyn2017]. In our study, this mismatch was especially evident in Rome, which had a relatively high abundance of *Legionella* 16S rRNA sequences, even in samples that failed to grow *Legionella* (which included the sample with 17% *Legionella* sequences). Why such a mismatch was observed is unclear; it could be due to disinfection regimes that kill cells after a period of proliferation, without destroying their DNA, or that cause a switch to a viable but nonculturable state, meaning they would be detected by molecular but not culture methods. Culturing is the gold standard, and detection of *Legionella* DNA is not necessarily a good indicator, since it cannot distinguish between loss of viability and viable but nonculturable state [@Llewellyn2017]. For our differential abundance analyses, culturable *Legionella* status, not presence in sequence data, was therefore used to identify negative and positive associations of other community members.
+
+Several of the negative associations that we identified are well supported by laboratory studies. For example, we found that a specific *Staphylococcus* sequence (ASV126) as well as the genus *Staphylococcus* overall were enriched in *Legionella* culture-negative samples, and pure culture experiments have shown that members of this genus can produce anti-*Legionella* peptides [@Hechard2005; @Marchand2011]. However, this negative association was not reported in the cooling tower studies, as *Staphylococcus* species were not detected there [@Llewellyn2017; @Paranjape2020a]. The negative effect of *Pseudomonas* on *Legionella* proliferation is well documented from laboratory studies, with *Pseudomonas* species using numerous inhibitory mechanisms [@Abd2008; @Guerrieri2008; @Loiseau2018; @Corre2019; @Faucher2022]. The cooling tower association studies in Canada [@Paranjape2020a] and across the USA [@Llewellyn2017] also found that the genus *Pseudomonas* and the family *Pseudomonadaceae*, respectively, had a negative correlation with *Legionella*, and we detected the same pattern on another continent and in premise plumbing compartments, which are different types of engineered water systems. This suggests that the inhibitory effects of *Pseudomonas* species on *Legionella* transcend the laboratory and can be generalised across multiple types of engineered water systems. The negative relationship in cooling towers was thought to be due (at least in part) to chlorination, which kills *Legionella* but allows *Pseudomonas* to proliferate [@Paranjape2020a]. However, this explanation does not entirely fit our data, because in Copenhagen, there is no chlorination but the observation still holds (there were more *Pseudomonas* in culture-negative samples).
+
+While the *Staphylococcus* and *Pseudomonas* negative associations were supported by published laboratory and/or cooling tower association studies, other negative relationships identified in our data were the opposite of what was reported in cooling towers. *Sphingopyxis* and *Hyphomicrobium* (both *Alphaproteobacteria*) were positively associated with *Legionella* in cooling towers [@Paranjape2020a] but negatively associated in our data. These genera are particularly abundant in biofilms and are thought to help in biofilm formation [@VazMoreira2011; @Ren2015], so an interesting negative association which may relate to the more organically rich environments of cooling towers and may be less pertinent in nutrient poorer premise plumbing systems that are continuously flushed. In addition, based on laboratory experiments, *Bdellovibrio* should have had a negative influence on *Legionella* proliferation, but was instead positively associated with culturable *Legionella*. *Bdellovibrio* is a predatory taxon but is not a specific grazer of *Legionella* [@Cavallaro2022], so perhaps it was instead grazing on *Legionella*'s competitors in the biofilm. This highlights that real-world effects are more complex than laboratory experiments. Seeding systems with *Bdellovibrio* to control *Legionella*, for example, could have unintended consequences if complex ecological interactions are poorly understood.
+
+The positive association of *Bdellovibrio* was the opposite of what laboratory experiments would have suggested, but other positive associations were easier to explain. Several were taxa known to be associated with amoeba, notably species in the *Craurococcus-Caldovatus* genus grouping [@Thomas2006] and in *Reyranella*. The positive association of these genera with culturable *Legionella* likely points to a higher abundance of amoeba in general, and thus a greater availability of host cells for *Legionella* growth and replication. A positive association of *Reyranella* was also reported in the Canadian cooling tower study [@Paranjape2020a]. Another amoeba-associated taxon, the symbiont *Neochlamydia*, also showed a positive association with *Legionella*; however, this correlation is more puzzling, as *Neochlamydia* species can confer resistance of their host amoebal cell to infection by *Legionella* and would be expected to have a negative influence [@Cavallaro2022]. In our data, this positive association might simply be highlighting an abundance of amoeba in general.
+
+Several other taxa that were positively associated with culturable *Legionella* appear to be important in nitrogen cycling, which was not apparent in the cooling tower association studies [@Llewellyn2017; @Paranjape2020a]. A number of ASVs in the nitrite-oxidising genus *Nitrospira*, as well as the genus overall, showed a strong positive association. This was despite the abundance and diversity of *Nitrospira* ASVs in Copenhagen samples, which only rarely grew *Legionella*. The specific *Nitrospira* ASVs that were most influential in separating the Copenhagen samples from the other cities in the PCA were not the same *Nitrospira* ASVs that had a positive association with *Legionella*. This suggests that even within the same genus, taxa can have different types of community interactions, with some species exhibiting a positive association with *Legionella* and others not. In the case of *Nitrospira* at least, but perhaps more generally, the genus level may be too coarse for differential abundance analysis and could mask contrasting patterns at finer taxonomic levels.
+
+Of course, association studies like ours show only correlation, not causation. The taxa with significant differential abundances are not necessarily supporting the proliferation or inhibiting the growth of *Legionella* directly. These taxa, including *Legionella*, could all be responding to other local conditions, for example temperature or disinfectant regime. The scale must also be considered in studies like this; relationships that are statistically significant across cities do not necessarily hold in individual biofilms. Finally, while culture data are quantitative (counts per L), 16S rRNA sequence data can only be semi-quantitative, as they are compositional in nature. They indicate the proportion of the bacterial community accounted for by each ASV, but do not give any indication of the total microbial biomass in these samples, which would have had to have been measured in parallel using a different method (e.g. flow cytometry, qPCR), or estimated using a spike-in control, neither of which we included here but which would be useful to consider in future studies of this nature.
+
+
+## Conclusions
+
+We found that significant associations (negative and positive) of specific bacterial taxa with culturable *Legionella* could be identified across a highly variable set of samples covering different premise plumbing compartments, different buildings, in four cities across Europe. Some of these associations were previously reported in cooling towers in North America and are supported by laboratory experiments with pure cultures. Our study suggests some of these associations are therefore consistent across many different environments where *Legionella* is found. Identifying ecological associations that transcend the laboratory and apply to different engineered water systems is important for developing new approaches to *Legionella* control.
+
+
+## Materials and Methods
+
+### Sampling locations and sample collection
+
+Four European capital cities were included in this study: Athens (Greece), Copenhagen (Denmark), Rome (Italy), and Warsaw (Poland). In 2015, Italy and Denmark had population LD incidence rates of \>2 cases per 100 000, whereas the incidence rates in Greece and Poland were 0.01-0.49 cases per 100 000 [@Jong2022]. The four cities differ in their water treatment approaches, the most notable difference being that Copenhagen, unlike the other three cities, does not use chlorination in its drinking water distribution system.
+
+Three buildings were selected from each city; this included a mix of hospitals, hotels, healthcare facilities, and public buildings, some of which had additional water treatment systems in place. Within each building, four premise plumbing compartments were chosen for repeated sampling: municipal water at the entrance of each building (MW), boiler bottom (BB) or after heater exchanger (AHE), hot recirculating water (HRW), and the farthest point from the boiler or heat exchanger (FPB). Repeated samples of each compartment were collected four (Athens, Copenhagen, Rome) or five (Warsaw) times between winter 2016-2017 and spring 2018.
+
+Two litres of water were collected from each compartment at each sampling point. One litre was concentrated to 10 mL using sterile 0.22 μm polycarbonate filter membrane for *Legionella* enumeration by culture, following the ISO 11731:2017 protocol. The second litre was filtered through a sterile 0.22 μm polycarbonate membrane, which was used for DNA extraction. Water temperature and pH were measured in a subset of samples.
+
+### DNA extraction and 16S rRNA amplicon sequencing
+
+Genomic DNA was extracted using the PowerWater DNA isolation kit (Qiagen, Hilden, Germany), according to the manufacturer's instructions. Briefly, the filter membrane was inserted into a bead beating tube containing lysis buffer. After disruption of the cells, lysates were transferred to a DNA-retaining spin column for the purification steps, performed in a QIAcube instrument. DNA was eluted in 100 μl elution buffer (10 mM Tris pH 8.5).
+
+High-throughput sequencing of the bacterial 16S rRNA gene V3-V4 hypervariable region was performed by a commercial genomics service (Eurofins Genomics, <https://www.eurofinsgenomics.eu>). V3-V4 amplicons were generated using the Eurofins standard primers V3V4-F (TACGGGAGGCAGCAG) and V3V4-R (CCAGGGTATCTAATCC). Libraries were cleaned, quantified and pooled for sequencing on the Illumina MiSeq platform with v3 chemistry (2x300 bp).
+
+### Bioinformatics processing
+
+Demultiplexed .fastq files obtained from Eurofins were first grouped by the instrument and run number specified in the sequence identifier lines, to account for the different sequencing error profiles that can occur on separate instruments and runs. DADA2 v1.16.0 [@Callahan2016] was used for quality control, error correction, taxonomic assignment, and generation of an amplicon sequence variant (ASV) table. Briefly, sequences were truncated based on their quality profiles, with settings specific to each sequencing run, and filtered to remove those with ambiguous and low-quality bases (full details in the R scripts available on GitHub). After the error modelling step, sample inference was run with the pool=pseudo option to maximise detection of rare variants while remaining within the limits of our computing resources. Paired reads were then merged, discarding any that did not overlap by at least 25 bases with no mismatches. With this primer set, merged reads show a bimodal length distribution with modes at 403 and 427/428 base pairs. Sequences outside the size range 400-430 bp were removed. ASV tables from the different sequencing runs were merged, chimeras were identified and removed using the "consensus" method in DADA2, and taxonomy was assigned using DADA2's implementation of the native Bayesian classifier [@Wang2007], against the Silva NR database, v1.38 [@Quast2012; @Glckner2017]. Further classification to species level was attempted using the Silva v1.38 species training set.
+
+The R package phyloseq [@McMurdie2013] was used for further pruning and filtering to remove likely artefacts and non-target sequences. Sequences classifying as Archaea, Eukarya, or unclassified at the Domain level were removed, as were those identified as mitochondria or chloroplasts. A prevalence filter was applied to keep only ASVs observed in at least three samples, and samples with fewer than 2000 reads were discarded.
+
+### Statistical analysis
+
+For most analyses, we used compositional methods that do not require normalisation of sequencing depth [@Gloor2016]. However, where normalisation was required, e.g. sample shannon index, comparison of ASV intersections, and proportions of taxonomic groups, we subsampled (with replacement) down to `r nseqs` sequences per sample, discarding the samples smaller than this in order to maximise the amount of data retained.
+
+Linear and generalised linear mixed effects models (R packages lme4 [@Bates2015], lmerTest [@Kuznetsova2017], and glmmTMB [@Brooks2017]) were used to account for the hierarchical and repeated measures structure of the data, and for the zero-inflated Poisson distribution observed with the *Legionella* culture count data. City, and where relevant, presence/absence of culturable *Legionella*, were specified as fixed effects. The repeated measurements within each compartment were accounted for by modelling building compartment as a random effect, nested within the building ID, since compartments within a building might have more similar microbiomes due to a common water source and local disinfection regime. The function ranova in the lmerTest package was used to compute ANOVA-like tables to assess whether these random effect terms improved model fit, and pairwise comparisons among the four cities were computed from the model output with the lsmeans package [@Lenth2016].
+
+For alpha diversity analyses, population richness (the number of ASVs in the populations from which samples were taken, rather than the number of ASVs in the samples themselves) was estimated using the R package breakaway [@Willis2015], and hypothesis testing was carried out with the functions betta and betta_random [@Willis2016], which account for the uncertainties in the richness estimates. Fixed and random effects were as above. Sample Shannon index (at the ASV level) was calculated in phyloseq. The intersection of ASVs among the four cities was plotted using the R package UpSetR [@Gehlenborg2019].
+
+For beta diversity analyses, we used the compositional Aitchison distance [@Gloor2016], equal to the Euclidean distance calculated from a center-log-ratio (CLR) transformed ASV table. Prior to the CLR transform, which cannot be done on zero values, we applied the count zero multiplicative approach implemented in the zCompositions package [@Palarea2015]. Samples and taxa were ordinated by PCA and plotted using the factoextra package [@Kassambara2020]. The influence of city and presence/absence of culturable *Legionella* (CFU_pres_abs) was assessed by permutational multivariate analysis of variance (PERMANOVA), as implemented by the adonis function of the vegan package [@Oksanen2020]. Compartment ID was specified as a blocking variable (strata) to account for repeated measures. Multivariate homogeneity of groups dispersions was tested for city and *Legionella* pres/abs with the betadisper function.
+
+Differential abundance analysis was carried out on the ASV and genus-agglomerated tables using the compositional approach implemented in ALDEx2 [@Fernandes2013; @Fernandes2014]. Presence/absence of culturable *Legionella* was specified as the fixed effect, and significance testing used a Wilcoxon Rank Sum test and Welch's t-test, with Benjamini-Hochberg corrected p-values.
+
+```{r}
+# Proportion Legionella genus in the sequence data
+# lmer(Leg_genus_sum ~ City + CFU_pres_abs + (1|Bldg_ID) + (1|Bldg_loc_ID), data = samples_V4_leg_trim, REML=FALSE)
+
+# ranova() to check whether random effects terms improve the model
+
+# Proportion Legionella seqs that are P. pneumo
+# lmer(prop.pneumo ~ City + CFU_pres_abs + (1|Bldg_ID) + (1|Bldg_loc_ID), data = samples_V4_leg_trim, REML=FALSE)
+
+# ranova() to check whether random effects terms improve the model
+
+# Estimated richness
+# lmer on estimates to show Bldg_ID not important, then
+# betta_random to take into account errors around the estimates
+
+# Shannon (sample)
+# lmer(shannon ~ City + CFU_pres_abs + (1|Bldg_ID) + (1|Bldg_loc_ID), data = samples_V4_leg_trim, REML=FALSE)
+
+
+```
+
+### Data availability
+
+Raw sequencing data were deposited in the European Nucleotide Archive (ENA) under BioProject PRJEB52062. R scripts used for analysis and for generating the Rmarkdown manuscript are available from github, XXXX (link to be added prior to submission).
+
+## Acknowledgements
+
+This work was funded by ESCMID as the first grant (no number is available) provided to ESGLI (ESCMID Study group of Legionella Infection) in 2016. We wish to thank Dr. Rodrigo Bacigalupe from University of Edinburgh, for his critical evaluation of the paper. We are grateful to Mrs Despina Karamousa from the Region of Attica, Regional Unit of the Central Athens Sector, Department of Health and Environmental Control and Mrs Aspasia Gatsiou from the Specialized Oncologic Hospital of Piraeus "METAXA", for their valuable collaboration, continuous support and commitment to the project and the laboratory.
+
+## Conflicts of interest
+
+The authors declare that they have no competing interests.
+
+\newpage
+
+## Figure legends
+
+**Figure 1. Main bacterial phyla and genera in premise plumbing systems in four European cities.** (A) Top ten most abundant phyla across all samples. (B) Top fifteen most abundant genera across all samples. Parentheses next to taxon names show the number of distinct ASVs with that classification. Samples were normalised to `r nseqs` sequences. Filled circles show *Legionella* culture-positive samples, asterisks show culture-negative samples, open circles show samples with no culture data.
+
+**Figure 2. Alpha and beta diversity of premise plumbing samples from four European cities, with and without culturable *Legionella*.** Asterisks show samples that were *Legionella* culture-negative, filled circles show samples that were *Legionella* culture-positive, open circles show samples without *Legionella* culture data. (A) Population richness (number of ASVs) estimated from sample richness using breakaway, which fits nonlinear regression models on the ratios of frequency counts to estimate total richness. This approach does not require sample normalisation, since greater sequencing depth reduces the error of the estimate. (B) Sample Shannon diversity index. Samples were normalised to `r nseqs` sequences. (C) Aitchison distance PCA, with arrows indicating the fifteen most influential ASVs. Percent variance explained by the first two components is shown on the axes, and marginal boxplots show the distribution of samples along these components.
+
+**Figure 3. Number of shared and distinct ASVs among the four European cities.** Samples were normalised to `r nseqs` sequences prior to determining the ASVs present in each city, and no minimum prevalence or abundance thresholds were used to determine membership. (A) All 16S rRNA ASVs, and (B) ASVs classified into the genus *Legionella*.
+
+**Figure 4. Prevalence and relative abundance of ASVs classifying as *Legionella*, across all samples, grouped by city and by building.** Samples were normalised to n=10 148 sequences. *Legionella* culture status of each sample is shown in the bar at the top (red = positive, grey = negative, white = no culture data collected). ASVs are grouped by their prevalence either across multiple cities (top horizontal block), or predominantly in a single city (bottom four horizontal blocks). *Legionella* genus ASVs that could be further classified have species names attached. Only ASVs present in five or more samples are shown, for clarity. Two rarer ASVs were also further classified to species level: *L. drozanskii* (ASV281), present in four samples (two from Rome, two from Warsaw), and *L. pneumophila* (ASV4571), present in one sample from Rome.
+
+**Figure 5. *Legionella* spp. in the culture and 16S rRNA data.** (A) Distribution of samples from each city across the culturable *Legionella* categories (log10 bins, with '0' indicating culture-negative samples. (B) Percent 16S rRNA sequences classifying as the genus *Legionella* versus culturable *Legionella* count categories. Dashed horizontal line shows the limit of detection of the 16S data, `r 1/nseqs * 100`%, determined from the normalised sequencing depth of `r nseqs` sequences per sample. (C) Percent *Legionella* spp. 16S rRNA sequences that were further classified as *Legionella pneumophila*. Asterisks indicate samples that were *Legionella* culture-negative, filled circles show samples that were *Legionella* culture-positive.
+
+**Figure 6. Specific ASVs (A) and genera (B) showing a significant association with *Legionella* culture-negative or culture-positive samples.** ASVs and genera with effect \< 0 are significantly associated with culture-negative samples, and those with effect \> 0, with culture-positive samples. Symbols are coloured by Class and scaled to the mean relative abundance of the ASV or genus across all samples.
+
+**Figure 7. Examples of differentially abundant ASVs and genera.** (A) Taxa associated with *Legionella* culture-negative samples. (B) Taxa associated with *Legionella* culture-positive samples. Differential abundance analysis was carried out separately on the ASV-level and genus-level data, using ALDEx2.
+
+\newpage
+
+## Supplemental data
+
+### Supplemental tables
+
+#### ASV population richness estimates
+
+Estimated population richness was calculated using `breakaway` (version 4.7.5). Mixed effects model was run with `betta_random`, which takes into account the uncertainty around the population richness estimate. City and presence or absence of culturable *Legionella* were specified as fixed effects, and building compartment ID was specified as a random effect (`betta_random` accepts a single random effect term).
+
+```{r breakaway richness main stats table}
+# Main table
+richness.stats <- as_tibble(richness.betta.table, rownames = " ")
+
+set_flextable_defaults(
+  font.size = 10,
+  font.color = "black",
+  table.layout = "fixed",
+  digits = 3,
+  big.mark = " "
+  )
+
+ft.rich <- flextable(richness.stats) %>%
+  colformat_double() %>%
+  align(align = "center", part = "all" ) %>%
+  autofit() %>%
+  # hline(i = 6) %>%
+  set_caption("Population richness: Output of mixed effect model run with the breakaway package, which accounts for the uncertainty around the richness estimates (richness ~ City * CFU_pres_abs + (1 | Bldg_loc_ID)")
+
+ft.rich
+
+```
+
+Pairwise comparisons of each city pair was carried out computing linear combinations of fixed effects with the `betta_lincom` function in the `breakaway` package. p-values were generated from a two-sided Wald test, against the null hypothesis that the linear combination of fixed effects is zero.
+
+```{r richness pairwise cities}
+# Pairwise table
+ft.rich.pairs <- flextable(rich.city.comps.adj) %>%
+  colformat_double() %>%
+  align(align = "center", part = "all" ) %>%
+  autofit() %>%
+  # hline(i = 6) %>%
+  set_caption("Pairwise comparisons of city population richness estimates") %>%
+  footnote(i = 1, j = 7,
+            value = as_paragraph("p-values corrected for multiple comparisons using the Benjamini & Hochberg method"),
+            ref_symbols = c("1"),
+            part = "header")
+
+ft.rich.pairs
+
+```
+
+#### Shannon index
+
+```{r shannon anova}
+shannon.anova.table <- shannon.anova %>%
+  as_tibble(rownames = " ")
+
+ft.shannon.anova <- flextable(shannon.anova.table) %>%
+  colformat_double() %>%
+  align(align = "center", part = "all" ) %>%
+  autofit() %>%
+  set_caption("Shannon index: ANOVA of mixed effect model (Shannon ~ City * CFU_pres_abs + (1 | Bldg_ID / Location_in_building)")
+
+ft.shannon.anova
+```
+
+```{r shannon model summary}
+# ft.shannon <- flextable(shannon.summary) %>%
+#   colformat_double() %>%
+#   align(align = "center", part = "all" ) %>%
+#   autofit() %>%
+#   # hline(i = 6) %>%
+#   set_caption("Shannon index: Output of mixed effect model (Shannon ~ City * CFU_pres_abs + (1 | Bldg_ID / Location_in_building)")
+# 
+# ft.shannon
+```
+
+```{r shannon pairwise cities}
+# Pairwise table
+ft.shannon.pairs <- flextable(shannon.pairwise.table) %>%
+  colformat_double() %>%
+  align(align = "center", part = "all" ) %>%
+  autofit() %>%
+  # hline(i = 6) %>%
+  set_caption("Pairwise comparisons of city Shannon diversity index") %>%
+  footnote(i = 1, j = 6,
+            value = as_paragraph("p-values corrected for multiple comparisons using the Tukey method"),
+            ref_symbols = c("1"),
+            part = "header")
+
+ft.shannon.pairs
+
+```
+
+#### PERMANOVA on distance matrix (adonis)
+
+```{r}
+ft.adonis <- flextable(adonis.test.table) %>%
+  colformat_double(j = c("Df", "SumsOfSqs", "MeanSqs"),
+                   digits = 0) %>%
+  colformat_double(j = c("F.Model", "R2", "Pr(>F)"),
+                   digits = 4) %>%
+  align(align = "center", part = "all" ) %>%
+  autofit() %>%
+  # hline(i = 6) %>%
+  set_caption("PERMANOVA of Aitchison distance matrix, computed using adonis function with strata = Building_loc_ID to account for repeated measures")
+
+ft.adonis
+```
+
+#### Dispersion test (betadispr with permutest)
+
+```{r}
+dispr.city.tab <- dispr.city.test$tab %>% as_tibble(rownames = " ")
+dispr.cfu.tab <- dispr.cfu.test$tab %>% as_tibble(rownames = " ")
+
+dispr.joined <- bind_rows("City" = dispr.city.tab,
+                          "CFU pres/abs" = dispr.cfu.tab,
+                          .id = "Variable") %>%
+  mutate(Variable = ifelse(` ` == "Groups", Variable, NA_character_))
+
+ft.betadispr <- flextable(dispr.joined) %>%
+  colformat_double(j = c("Df", "Sum Sq", "N.Perm"),
+                   digits = 0) %>%
+  colformat_double(j = c("F", "Pr(>F)"),
+                   digits = 4) %>%
+  colformat_double(j = c("Mean Sq"),
+                   digits = 2) %>%
+  align(align = "center", part = "all" ) %>%
+  autofit() %>%
+  hline(i = 2) %>%
+  set_caption("Dispersion of groups around centroid, computed using betadispr function in vegan package")
+
+ft.betadispr
+```
+
+#### Culturable *Legionella* (CFU/L) by city
+
+```{r cfu_L by city}
+model.comp.table <- as_tibble(cfu.model.comp.table, rownames = "Model name") %>%
+  mutate(`Counts model terms` = case_when(
+    `Model name` == "mod.poisson" ~ "~ City",
+    `Model name` == "mod.poisson.zi.simple" ~ "~ City",
+    `Model name` == "mod.poisson.zi.city" ~ "~ City",
+    `Model name` == "mod.poisson.me.zi.simple" ~ "~ City + (1|Bldg_ID/Location_in_building)",
+    `Model name` == "mod.poisson.me.zi.city" ~ "~ City + (1|Bldg_ID/Location_in_building)",
+    `Model name` == "mod.poisson.me.zi.cityme" ~ "~ City + (1|Bldg_ID/Location_in_building)"
+  )) %>%
+  mutate(`Zeros counts model terms` = case_when(
+    `Model name` == "mod.poisson" ~ "~ 0 (no zero inflation modelling)",
+    `Model name` == "mod.poisson.zi.simple" ~ "~ 1 (constant zero modelling)",
+    `Model name` == "mod.poisson.zi.city" ~ "~ City",
+    `Model name` == "mod.poisson.me.zi.simple" ~ "~ 1 (constant zero modelling)",
+    `Model name` == "mod.poisson.me.zi.city" ~ "~ City",
+    `Model name` == "mod.poisson.me.zi.cityme" ~ "~ City + (1|Bldg_ID/Location_in_building)"
+  ))
+
+ft.cfu.models <- flextable(model.comp.table) %>%
+  colformat_double(j = c("df", "AIC"), digits = 0) %>%
+  align(align = "left", part = "all" ) %>%
+  autofit() %>%
+  # hline(i = 6) %>%
+  set_caption("Model selection for CFU/L data: GLM with Poisson distribution, with addition of zero inflation and mixed effects")
+
+ft.cfu.models
+```
+
+```{r cfu zero-inflated model outputs}
+cfu.counts.mod.table <- leg.cfu.mod.summary$coefficients$cond %>%
+  as_tibble(rownames = " ")
+
+cfu.zeros.mod.table <- leg.cfu.mod.summary$coefficients$zi %>%
+  as_tibble(rownames = " ")
+
+cfu.joined <- bind_rows("Counts" = cfu.counts.mod.table,
+                          "Zero counts" = cfu.zeros.mod.table,
+                          .id = "Model component") %>%
+  mutate(`Model component` = ifelse(` ` == "(Intercept)", `Model component`, NA_character_))
+
+ft.cfu.model.output <- flextable(cfu.joined) %>%
+  colformat_double(j = c("Estimate", "Std. Error", "z value", "Pr(>|z|)"),
+                   digits = 3) %>%
+  # align(align = "center", part = "all" ) %>%
+  autofit() %>%
+  hline(i = 4) %>%
+  set_caption("Culturable Legionella CFU/L by city: zero-inflated mixed effects generalised linear model with Poisson distribution (CFU/L counts and zero counts independently modelled by ~ City + (1|Bldg_ID/Location_in_building)")
+
+ft.cfu.model.output
+```
+
+```{r cfu pairwise city}
+cfu.pairwise.city.table <- cfu.pairwise.city$contrasts %>%
+  as_tibble() %>%
+  rename("City pair" = contrast)
+
+ft.cfu.pairs <- flextable(cfu.pairwise.city.table) %>%
+  colformat_double() %>%
+  align(align = "center", part = "all" ) %>%
+  autofit() %>%
+  # hline(i = 6) %>%
+  set_caption("Pairwise comparisons of city culturable Legionella counts (CFU/L)") %>%
+  footnote(i = 1, j = 6,
+            value = as_paragraph("p-values corrected for multiple comparisons using the Tukey method"),
+            ref_symbols = c("1"),
+            part = "header")
+
+ft.cfu.pairs
+```
+
+#### *Legionella* genus in all 16S data
+
+```{r}
+leg16S.anova.table <- leg.gen.anova %>%
+  as_tibble(rownames = " ")
+
+legpneumo16S.anova.table <- leg.sp.anova %>%
+  as_tibble(rownames = " ")
+
+leg16S.joined <- bind_rows("all Legionella genus" = leg16S.anova.table,
+                          "L. pneumophila only" = legpneumo16S.anova.table,
+                          .id = "Classification") %>%
+  mutate(`Classification` = ifelse(` ` == "City", `Classification`, NA_character_)) %>%
+  mutate(`Sum Sq` = formatC(`Sum Sq`, format = "e", digits = 3)) %>%
+  mutate(`Mean Sq` = formatC(`Mean Sq`, format = "e", digits = 3))
+
+
+ft.leg16S.anova <- flextable(leg16S.joined) %>%
+  colformat_double(j = c("DenDF", "F value", "Pr(>F)"), digits = 3) %>%
+  align(align = "center", part = "all" ) %>%
+  autofit() %>%
+  hline(i = 3) %>%
+  set_caption("Proportion Legionella genus and L. pneumophila in 16S rRNA data: ANOVA of mixed effect model (Proportion ~ City * CFU_pres_abs + (1 | Bldg_ID / Location_in_building)")
+
+ft.leg16S.anova
+```
+
+```{r}
+# leg.gen.pairwise.city.table <- leg.gen.pairwise$contrasts %>%
+#   as_tibble() %>%
+#   rename("City pair" = contrast)
+# 
+# ft.leg.gen.pairs <- flextable(leg.gen.pairwise.city.table) %>%
+#   colformat_double() %>%
+#   align(align = "center", part = "all" ) %>%
+#   autofit() %>%
+#   # hline(i = 6) %>%
+#   set_caption("Pairwise comparisons of cities - proportion of Legionella sequences in the 16S rRNA data") %>%
+#   footnote(i = 1, j = 6,
+#             value = as_paragraph("p-values corrected for multiple comparisons using the Tukey method"),
+#             ref_symbols = c("1"),
+#             part = "header")
+# 
+# ft.leg.gen.pairs
+```
+
+#### L. pneumophila proportion of *Legionella* genus sequences
+
+```{r}
+leg.prop.anova.table <- leg.prop.anova %>%
+  as_tibble(rownames = " ")
+
+ft.leg.prop.anova <- flextable(leg.prop.anova.table) %>%
+  colformat_double() %>%
+  align(align = "center", part = "all" ) %>%
+  autofit() %>%
+  set_caption("Proportion of all Legionella 16S sequences that are further classified as L. pneumophila: ANOVA of mixed effect model (L.pneumo proportion ~ City * CFU_pres_abs + (1 | Bldg_ID / Location_in_building)")
+
+ft.leg.prop.anova
+```
+
+\newpage
+
+## References
+

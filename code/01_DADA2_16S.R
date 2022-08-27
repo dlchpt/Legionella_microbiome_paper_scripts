@@ -1,0 +1,405 @@
+# Legionella-associated 16S microbiome in four European countries
+
+# DADA2 amplicon pipeline to generate ASV table from raw data
+
+# DADA2 tutorials:
+# https://www.bioconductor.org/packages/release/bioc/vignettes/dada2/inst/doc/dada2-intro.html
+# https://benjjneb.github.io/dada2/tutorial.html
+# https://benjjneb.github.io/dada2/bigdata_paired.html
+# https://astrobiomike.github.io/amplicon/dada2_workflow_ex
+
+# The initial DADA2 pipeline needs to be run on each sequencing batch separately,
+# as their error profiles can differ.
+# They might also need different trim settings, depending on the quality profiles.
+
+
+# Instead of writing out the DADA2 steps for each sequencing batch, I will
+# put these in a for loop, to make the code easier to change and troubleshoot.
+# But I need a way to set the trim settings and run numbers for each batch,
+# and adjust the filename parsing parameters, since these were not consistent.
+
+# Packages and seed
+library(Biostrings); packageVersion("Biostrings")
+library(dada2); packageVersion("dada2")
+library(here); packageVersion("here")
+library(phyloseq); packageVersion("phyloseq")
+set.seed(65536)
+
+
+# First, set the path to the directories for each raw data batch, and the path
+# to the output directory (using relative paths from project root)
+in.path <- here("data", "raw", "16S")
+out.path <- here("data", "process")
+
+# Make a list of the batches
+batches <- list.files(in.path)
+
+# Make a data frame with individual settings for each batch
+
+# Trim forward
+trim.fwd <- c(270, 280, 280)
+
+# Trim reverse
+trim.rev <- c(250, 200, 200)
+
+settings <- data.frame(row.names = batches,
+                       trim.fwd = trim.fwd, 
+                       trim.rev = trim.rev)
+
+## While I would normally do this in a loop, the different file-naming
+# conventions are making this tricky. For now, for speed, I'll just copy
+# this next section three times and modify as needed for each batch
+# (might streamline later).
+
+# Batch 1 error calculation ####
+i <- batches[1]
+
+  dir <- paste0(in.path, "/", i)
+  out <- paste0(out.path, "/", i)
+  list.files(dir)
+  
+  fnFs <- sort(list.files(dir, pattern="_1.fastq.gz", full.names = TRUE))
+  fnRs <- sort(list.files(dir, pattern="_2.fastq.gz", full.names = TRUE))
+  
+  # Extract sample names, assuming filenames have format: SAMPLENAME_X.fastq.gz
+  sample.names <- sapply(strsplit(basename(fnFs), "_1"), `[`, 1)
+  # sample.names <- sapply(strsplit(sample.names.temp, 
+                                  # paste0(settings[i,"run.no"], "_")), `[`, 2)
+  
+  write(sample.names, file = paste0(out.path, "/", i, "_names.txt"))
+  
+  # Examine the quality profile of the data
+  plotQualityProfile(fnFs[1:4]) # Forward
+  plotQualityProfile(fnRs[1:4]) # Reverse
+  
+  # Trim the forward and reverse reads based on values in settings df
+  # Don't remove the first 10 nucleotides
+  # Filter out all reads with more than  maxN=0 ambiguous nucleotides
+  # Filter out all reads with more than two expected errors
+  # Filtered output files stored as gzipped fastq files (compress=TRUE)
+  # Keep only sequences when both F and R reads are kept
+  truncF <- settings[i, "trim.fwd"]
+  truncR <- settings[i, "trim.rev"]
+  
+  filtFs <- file.path(out, paste0(sample.names, "_F_filt.fastq.gz"))
+  filtRs <- file.path(out, paste0(sample.names, "_R_filt.fastq.gz"))
+  
+  filtered <- filterAndTrim(fwd=fnFs, filt=filtFs, rev=fnRs, filt.rev=filtRs,
+                            trimLeft=0, truncLen=c(truncF, truncR), 
+                            maxN=0, maxEE=c(2,2), truncQ=2, rm.phix=TRUE,
+                            compress=TRUE, multithread=TRUE, verbose=TRUE)
+  
+  head(filtered)
+  
+  ## Learn error rate
+  # uses a parametric model of the errors introduced by PCR amplification and 
+  # sequencing
+  errF <- learnErrors(filtFs, nbases = 1e8, multithread=TRUE, randomize=TRUE)
+  errR <- learnErrors(filtRs, nbases = 1e8, multithread=TRUE, randomize=TRUE)
+  
+  # Plot errors to check that estimated error (black line) is a good fit for 
+  # observed error (grey dots)
+  plotErrors(errF[1:9], nominalQ=TRUE)
+  plotErrors(errR[1:9], nominalQ=TRUE)
+  
+  ## Dereplicate
+  # derepFastq maintains a summary of the quality information for each 
+  # dereplicated sequence in $quals
+  derepF <- derepFastq(filtFs, verbose=TRUE)
+  derepR <- derepFastq(filtRs, verbose=TRUE)
+  
+  # The sample names in these objects are initially the file names of the samples, 
+  # This sets them to the sample names for the rest of the workflow
+  names(derepF) <- sample.names
+  names(derepR) <- sample.names
+  
+  ## Infer sample composition
+  # Using pool=TRUE means sequences from all samples will be pooled prior to ASV
+  # detection. This is better at detecting rare ASVs but more computationally 
+  # intensive than the default pool=FALSE
+  # Can use pool="pseudo" as an intermediate
+  dadaF <- dada(derepF, err=errF, multithread=TRUE, pool="pseudo")
+  dadaR <- dada(derepR, err=errR, multithread=TRUE, pool="pseudo")
+  
+  # Merge pairs
+  # trimOverhang=TRUE is probably unnecessary but will include just in case
+  # minOverlap default is only 12, so will set it higher (reads should overlap 
+  # substantially here, except for poorer runs that were trimmed more aggressively)
+  merger <- mergePairs(dadaF, derepF, dadaR, derepR, trimOverhang=TRUE, 
+                       minOverlap=25, verbose=TRUE)
+  
+  # Remove large temporary files
+  rm(derepF); rm(derepR)
+  
+  # Make and save the ASV table
+  seqtab <- makeSequenceTable(merger)
+  
+  # Inspect distribution of sequence lengths
+  table(nchar(getSequences(seqtab)))
+  
+  # V3-V4 has a bimodal distribution, and this is what we have here:
+  # One mode at 402 and the other at 427-428. I'll set the range to
+  # 400-430.
+  seqtab.trim <- seqtab[,nchar(colnames(seqtab)) %in% seq(400,430)]
+  table(nchar(getSequences(seqtab.trim)))
+  
+  saveRDS(seqtab.trim, paste0(out.path, "/", i, "_seqtab.rds"))
+  
+# }
+
+
+# Batch 2 error calculation ####
+  i <- batches[2]
+  
+  dir <- paste0(in.path, "/", i)
+  out <- paste0(out.path, "/", i)
+  list.files(dir)
+  
+  fnFs <- sort(list.files(dir, pattern="_FWD.fastq.gz", full.names = TRUE))
+  fnRs <- sort(list.files(dir, pattern="_REV.fastq.gz", full.names = TRUE))
+  
+  # Extract sample names, assuming filenames have format: SAMPLENAME_V3V4_XXX.fastq.gz
+  sample.names <- sapply(strsplit(basename(fnFs), "_V3V4_FWD"), `[`, 1)
+  # sample.names <- sapply(strsplit(sample.names.temp, 
+  # paste0(settings[i,"run.no"], "_")), `[`, 2)
+  
+  write(sample.names, file = paste0(out.path, "/", i, "_names.txt"))
+  
+  # Examine the quality profile of the data
+  plotQualityProfile(fnFs[1:4]) # Forward
+  plotQualityProfile(fnRs[1:4]) # Reverse
+  
+  # Trim the forward and reverse reads based on values in settings df
+  # Don't remove the first 10 nucleotides
+  # Filter out all reads with more than  maxN=0 ambiguous nucleotides
+  # Filter out all reads with more than two expected errors
+  # Filtered output files stored as gzipped fastq files (compress=TRUE)
+  # Keep only sequences when both F and R reads are kept
+  truncF <- settings[i, "trim.fwd"]
+  truncR <- settings[i, "trim.rev"]
+  
+  filtFs <- file.path(out, paste0(sample.names, "_F_filt.fastq.gz"))
+  filtRs <- file.path(out, paste0(sample.names, "_R_filt.fastq.gz"))
+  
+  filtered <- filterAndTrim(fwd=fnFs, filt=filtFs, rev=fnRs, filt.rev=filtRs,
+                            trimLeft=0, truncLen=c(truncF, truncR), 
+                            maxN=0, maxEE=c(2,2), truncQ=2, rm.phix=TRUE,
+                            compress=TRUE, multithread=TRUE, verbose=TRUE)
+  
+  head(filtered)
+  
+  ## Learn error rate
+  # uses a parametric model of the errors introduced by PCR amplification and 
+  # sequencing
+  errF <- learnErrors(filtFs, nbases = 1e8, multithread=TRUE, randomize=TRUE)
+  errR <- learnErrors(filtRs, nbases = 1e8, multithread=TRUE, randomize=TRUE)
+  
+  # Plot errors to check that estimated error (black line) is a good fit for 
+  # observed error (grey dots)
+  plotErrors(errF[1:9], nominalQ=TRUE)
+  plotErrors(errR[1:9], nominalQ=TRUE)
+  
+  ## Dereplicate
+  # derepFastq maintains a summary of the quality information for each 
+  # dereplicated sequence in $quals
+  derepF <- derepFastq(filtFs, verbose=TRUE)
+  derepR <- derepFastq(filtRs, verbose=TRUE)
+  
+  # The sample names in these objects are initially the file names of the samples, 
+  # This sets them to the sample names for the rest of the workflow
+  names(derepF) <- sample.names
+  names(derepR) <- sample.names
+  
+  ## Infer sample composition
+  # Using pool=TRUE means sequences from all samples will be pooled prior to ASV
+  # detection. This is better at detecting rare ASVs but more computationally 
+  # intensive than the default pool=FALSE
+  # Can use pool="pseudo" as an intermediate
+  dadaF <- dada(derepF, err=errF, multithread=TRUE, pool="pseudo")
+  dadaR <- dada(derepR, err=errR, multithread=TRUE, pool="pseudo")
+  
+  # Merge pairs
+  # trimOverhang=TRUE is probably unnecessary but will include just in case
+  # minOverlap default is only 12, so will set it higher (reads should overlap 
+  # substantially here, except for poorer runs that were trimmed more aggressively)
+  merger <- mergePairs(dadaF, derepF, dadaR, derepR, trimOverhang=TRUE, 
+                       minOverlap=25, verbose=TRUE)
+  
+  # Remove large temporary files
+  rm(derepF); rm(derepR)
+  
+  # Make and save the ASV table
+  seqtab <- makeSequenceTable(merger)
+  
+  # Inspect distribution of sequence lengths
+  table(nchar(getSequences(seqtab)))
+  
+  # V3-V4 has a bimodal distribution, and this is what we have here:
+  # One mode at 402 and the other at 427-428. I'll set the range to
+  # 400-430.
+  seqtab.trim <- seqtab[,nchar(colnames(seqtab)) %in% seq(400,430)]
+  table(nchar(getSequences(seqtab.trim)))
+  
+  saveRDS(seqtab.trim, paste0(out.path, "/", i, "_seqtab.rds"))
+  
+  # }  
+  
+  
+# Batch 3 error calculation ####
+  i <- batches[3]
+  
+  dir <- paste0(in.path, "/", i)
+  out <- paste0(out.path, "/", i)
+  list.files(dir)
+  
+  fnFs <- sort(list.files(dir, pattern="_1.fastq.gz", full.names = TRUE))
+  fnRs <- sort(list.files(dir, pattern="_2.fastq.gz", full.names = TRUE))
+  
+  # Extract sample names, assuming filenames have format: SAMPLENAME.V3V4_X.fastq.gz
+  sample.names <- sapply(strsplit(basename(fnFs), ".V3V4_1"), `[`, 1)
+  # sample.names <- sapply(strsplit(sample.names.temp, 
+  # paste0(settings[i,"run.no"], "_")), `[`, 2)
+  
+  write(sample.names, file = paste0(out.path, "/", i, "_names.txt"))
+  
+  # Examine the quality profile of the data
+  plotQualityProfile(fnFs[1:4]) # Forward
+  plotQualityProfile(fnRs[1:4]) # Reverse
+  
+  # Trim the forward and reverse reads based on values in settings df
+  # Don't remove the first 10 nucleotides
+  # Filter out all reads with more than  maxN=0 ambiguous nucleotides
+  # Filter out all reads with more than two expected errors
+  # Filtered output files stored as gzipped fastq files (compress=TRUE)
+  # Keep only sequences when both F and R reads are kept
+  truncF <- settings[i, "trim.fwd"]
+  truncR <- settings[i, "trim.rev"]
+  
+  filtFs <- file.path(out, paste0(sample.names, "_F_filt.fastq.gz"))
+  filtRs <- file.path(out, paste0(sample.names, "_R_filt.fastq.gz"))
+  
+  filtered <- filterAndTrim(fwd=fnFs, filt=filtFs, rev=fnRs, filt.rev=filtRs,
+                            trimLeft=0, truncLen=c(truncF, truncR), 
+                            maxN=0, maxEE=c(2,2), truncQ=2, rm.phix=TRUE,
+                            compress=TRUE, multithread=TRUE, verbose=TRUE)
+  
+  head(filtered)
+  
+  ## Learn error rate
+  # uses a parametric model of the errors introduced by PCR amplification and 
+  # sequencing
+  errF <- learnErrors(filtFs, nbases = 1e8, multithread=TRUE, randomize=TRUE)
+  errR <- learnErrors(filtRs, nbases = 1e8, multithread=TRUE, randomize=TRUE)
+  
+  # Plot errors to check that estimated error (black line) is a good fit for 
+  # observed error (grey dots)
+  plotErrors(errF[1:9], nominalQ=TRUE)
+  plotErrors(errR[1:9], nominalQ=TRUE)
+  
+  ## Dereplicate
+  # derepFastq maintains a summary of the quality information for each 
+  # dereplicated sequence in $quals
+  derepF <- derepFastq(filtFs, verbose=TRUE)
+  derepR <- derepFastq(filtRs, verbose=TRUE)
+  
+  # The sample names in these objects are initially the file names of the samples, 
+  # This sets them to the sample names for the rest of the workflow
+  names(derepF) <- sample.names
+  names(derepR) <- sample.names
+  
+  ## Infer sample composition
+  # Using pool=TRUE means sequences from all samples will be pooled prior to ASV
+  # detection. This is better at detecting rare ASVs but more computationally 
+  # intensive than the default pool=FALSE
+  # Can use pool="pseudo" as an intermediate
+  dadaF <- dada(derepF, err=errF, multithread=TRUE, pool="pseudo")
+  dadaR <- dada(derepR, err=errR, multithread=TRUE, pool="pseudo")
+  
+  # Merge pairs
+  # trimOverhang=TRUE is probably unnecessary but will include just in case
+  # minOverlap default is only 12, so will set it higher (reads should overlap 
+  # substantially here, except for poorer runs that were trimmed more aggressively)
+  merger <- mergePairs(dadaF, derepF, dadaR, derepR, trimOverhang=TRUE, 
+                       minOverlap=25, verbose=TRUE)
+  
+  # Remove large temporary files
+  rm(derepF); rm(derepR)
+  
+  # Make and save the ASV table
+  seqtab <- makeSequenceTable(merger)
+  
+  # Inspect distribution of sequence lengths
+  table(nchar(getSequences(seqtab)))
+  
+  # V3-V4 has a bimodal distribution, and this is what we have here:
+  # One mode at 402 and the other at 427-428. I'll set the range to
+  # 400-430.
+  seqtab.trim <- seqtab[,nchar(colnames(seqtab)) %in% seq(400,430)]
+  table(nchar(getSequences(seqtab.trim)))
+  
+  saveRDS(seqtab.trim, paste0(out.path, "/", i, "_seqtab.rds"))
+  
+  # }
+
+# Merging runs and chimera detection ####
+## Can re-start from here with previously-saved .rds objects  
+
+b1 <- readRDS("data/process/DE18INS60510_349_seqtab.rds")
+b2 <- readRDS("data/process/DE18INS60512_124_seqtab.rds")
+b3 <- readRDS("data/process/M01607_357_seqtab.rds")
+
+
+# Merge the runs
+st.all <- mergeSequenceTables(b1, b2, b3)
+
+
+# Remove chimeras
+seqtab.nochim <- removeBimeraDenovo(st.all, method="consensus", multithread=TRUE,
+                                    verbose=TRUE)
+
+# Write to disk
+saveRDS(seqtab.nochim, here("data", "process", "seqtab.nochim.rds"))
+
+
+# Assign taxonomy using naive Bayesian classifier, with a minimum bootstrap
+# confidence of 60%
+taxa <- assignTaxonomy(seqtab.nochim, here("data", "references", "silva_nr_v138_train_set.fa.gz"),
+                       minBoot = 60, multithread = TRUE)
+
+# Write to disk
+saveRDS(taxa, here("data", "process", "taxonomy.rds"))
+
+## Species assignment step failed due to memory deficit. Will try prevalence filtering
+# first to reduce number of (likely spurious) ASVs.
+
+# Add species assignment to ASVs with 100% match to references:
+# taxa <- addSpecies(taxa, here("data", "references", "silva_species_assignment_v138.fa.gz"))
+# 
+# # How many have a species assignment?
+# length(taxa[, 7]) - sum(is.na(taxa[, 7]))
+
+
+# Next: Prevalence filtering and removing failed libraries
+
+# Make phyloseq object here to use in downstream scripts
+seqtab.nochim <- readRDS(here("data", "process", "seqtab.nochim.rds"))
+taxa <- readRDS(here("data", "process", "taxonomy.rds"))
+metadata <- read.table(here("data", "raw", "Metadata_main.txt"), 
+                       header = TRUE, row.names = 1)
+
+# Combine into phyloseq object
+ps <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows=FALSE), 
+               sample_data(metadata), 
+               tax_table(taxa))
+
+# Remove large temporary objects
+rm(seqtab.nochim); rm(taxa)
+
+ps # 18659 taxa and 177 samples
+
+# Append sample sums
+sample_data(ps)$sample_sums_dada2 <- sample_sums(ps)
+
+
+# Save phyloseq object for prevalence filtering, decontam, etc.
+saveRDS(ps, here("data", "process", "ps_object_after_dada2.rds"))
