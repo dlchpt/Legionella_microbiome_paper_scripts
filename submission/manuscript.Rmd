@@ -212,10 +212,10 @@ Before looking for specific taxa associated with culturable *Legionella*, we exa
 ```{r richness betta random city cfu}
 # Richness test with betta and breakaway
 # Breakaway calculation - takes ages so will comment out once run
-# br_V4 <- breakaway(V4)
+br_V4 <- breakaway(V4)
 
 # Save breakaway output to load quickly without having to re-run
-# saveRDS(br_V4, here("data", "process", "16S_breakaway.rds"))
+saveRDS(br_V4, here("data", "process", "16S_breakaway.rds"))
 
 br_V4 <- readRDS(here("data", "process", "16S_breakaway.rds"))
 
@@ -811,9 +811,9 @@ V4.cfu <- prune_taxa(taxa_sums(V4.cfu) > 49, V4.cfu)
 V4.cfu.RA <- transform(V4, "compositional")
 
 # This takes ages so will save the object and comment out the command once it's run
-# aldex2_cfu <- aldex(data.frame(t(otu_table(V4.cfu))), as.character(sample_data(V4.cfu)$CFU_pres_abs), test="t", effect = TRUE, denom="all")
+aldex2_cfu <- aldex(data.frame(t(otu_table(V4.cfu))), as.character(sample_data(V4.cfu)$CFU_pres_abs), test="t", effect = TRUE, denom="all")
 
-# saveRDS(aldex2_cfu, here("data", "process", "aldex_cfu_pres_abs.rds"))
+saveRDS(aldex2_cfu, here("data", "process", "aldex_cfu_pres_abs.rds"))
 aldex2_cfu <- readRDS(here("data", "process", "aldex_cfu_pres_abs.rds"))
 
 
@@ -858,9 +858,9 @@ V4.cfu.genus.RA <- transform(V4.cfu.genus, "compositional")
 V4.cfu.genus <- prune_taxa(taxa_sums(V4.cfu.genus) > 49, V4.cfu.genus)
 
 # This takes ages so will save the object and comment out the command once it's run
-# aldex2_cfu_genus <- aldex(data.frame(t(otu_table(V4.cfu.genus))), as.character(sample_data(V4.cfu.genus)$CFU_pres_abs), test="t", effect = TRUE, denom="all")
+aldex2_cfu_genus <- aldex(data.frame(t(otu_table(V4.cfu.genus))), as.character(sample_data(V4.cfu.genus)$CFU_pres_abs), test="t", effect = TRUE, denom="all")
 
-# saveRDS(aldex2_cfu_genus, here("data", "process", "aldex_cfu_genus_pres_abs.rds"))
+saveRDS(aldex2_cfu_genus, here("data", "process", "aldex_cfu_genus_pres_abs.rds"))
 aldex2_cfu_genus <- readRDS(here("data", "process", "aldex_cfu_genus_pres_abs.rds"))
 
 
