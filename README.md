@@ -65,6 +65,7 @@ These should be placed in the folder `/data/references/`.
   * `decontam`
   * `factoextra`
   * `flextable`
+  * `ggpubr`
   * `glmmTMB`
   * `here`
   * `knitr`
@@ -77,3 +78,5 @@ These should be placed in the folder `/data/references/`.
   * `tidyverse`
   * `UpSetR`
   * `vegan`
+  * `zCompositions`
+  
