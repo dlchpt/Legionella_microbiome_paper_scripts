@@ -1,0 +1,4 @@
+# Data folder
+This folder holds the raw, processed, and reference data needed to run all scripts in the repository. Raw data files include the metadata .txt file plus the .fastq.gz files (two per sample), which are available from the ENA. Processed files are generated during the analysis, but the main ones can also be downloaded from figshare if only the later steps in the analysis are being re-run (since the early steps are computationally intensive). Reference files consist of the Silva database files used for taxonomic assignment.
+
+Instructions for obtaining these files can be found in the main repository README.md.
