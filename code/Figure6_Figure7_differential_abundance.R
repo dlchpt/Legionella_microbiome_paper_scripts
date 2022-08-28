@@ -1,4 +1,4 @@
-# Figure 5: Differential abundance of genera by Legionella CFU
+# Figure 6: Differential abundance of genera by Legionella CFU ####
 
 library(ALDEx2)
 library(ggpubr)
@@ -10,9 +10,9 @@ library(tidyverse)
 
 
 # Load plot settings and final data sets
-source(here("code", "settings_and_data_for_figures.R"))
+source(here("code", "03_settings_and_data_for_figures.R"))
 
-# Figure 5: ALDEx2 plot at genus level
+# Figure 6: ALDEx2 plot at genus level
 # This is run from the full phyloseq object, as I need the genus-glommed data
 # on raw counts, not on RA
 # Exclude samples with no CFU data, keep low-abundance ASVs prior to agglomeration
@@ -25,9 +25,9 @@ V4.cfu.genus.RA <- transform(V4.cfu.genus, "compositional")
 V4.cfu.genus <- prune_taxa(taxa_sums(V4.cfu.genus) > 49, V4.cfu.genus)
 
 # This takes ages so will save the object and comment out the command once it's run
-# aldex2_cfu_genus <- aldex(data.frame(t(otu_table(V4.cfu.genus))), as.character(sample_data(V4.cfu.genus)$CFU_pres_abs), test="t", effect = TRUE, denom="all")
+aldex2_cfu_genus <- aldex(data.frame(t(otu_table(V4.cfu.genus))), as.character(sample_data(V4.cfu.genus)$CFU_pres_abs), test="t", effect = TRUE, denom="all")
 
-# saveRDS(aldex2_cfu_genus, here("data", "process", "aldex_cfu_genus_pres_abs.rds"))
+saveRDS(aldex2_cfu_genus, here("data", "process", "aldex_cfu_genus_pres_abs.rds"))
 aldex2_cfu_genus <- readRDS(here("data", "process", "aldex_cfu_genus_pres_abs.rds"))
 
 
@@ -61,8 +61,8 @@ sig_aldex2_cfu_genus <- aldex2_cfu_genus %>%
   mutate(Genus = fct_inorder(Genus))
   
 
-# Fig 5b ALDEx2 genus ####
-fig5b <- sig_aldex2_cfu_genus %>%
+# Fig 6b ALDEx2 genus ####
+fig6b <- sig_aldex2_cfu_genus %>%
   ggplot(aes(x = Genus, y = effect, color = Class)) +
   geom_segment(aes(y = 0, x = Genus, 
                    yend = effect, xend = Genus), 
@@ -87,9 +87,9 @@ V4.cfu <- prune_taxa(taxa_sums(V4.cfu) > 49, V4.cfu)
 
 
 # This takes ages so will save the object and comment out the command once it's run
-# aldex2_cfu <- aldex(data.frame(t(otu_table(V4.cfu))), as.character(sample_data(V4.cfu)$CFU_pres_abs), test="t", effect = TRUE, denom="all")
+aldex2_cfu <- aldex(data.frame(t(otu_table(V4.cfu))), as.character(sample_data(V4.cfu)$CFU_pres_abs), test="t", effect = TRUE, denom="all")
 
-# saveRDS(aldex2_cfu, here("data", "process", "aldex_cfu_pres_abs.rds"))
+saveRDS(aldex2_cfu, here("data", "process", "aldex_cfu_pres_abs.rds"))
 aldex2_cfu <- readRDS(here("data", "process", "aldex_cfu_pres_abs.rds"))
 
 # Add taxonomic labels to aldex2 output
@@ -121,8 +121,8 @@ sig_aldex2_cfu <- aldex2_cfu %>%
   mutate(Genus_OTU = fct_inorder(Genus_OTU)) %>%
   mutate(Genus = fct_inorder(Genus))
 
-# Fig 5a ALDEx2 ASV level ####
-fig5a <- sig_aldex2_cfu %>%
+# Fig 6a ALDEx2 ASV level ####
+fig6a <- sig_aldex2_cfu %>%
   ggplot(aes(x = Genus_OTU, y = effect, color = Class)) +
   geom_segment(aes(y = 0, x = Genus_OTU, 
                    yend = effect, xend = Genus_OTU), 
@@ -137,16 +137,16 @@ fig5a <- sig_aldex2_cfu %>%
         panel.border = element_rect(fill = NA, colour = "black", size = 1)) +
   guides(color = guide_legend(reverse = TRUE))
 
-# fig5a
+# fig6a
 
-fig5 <- ggarrange(fig5a, NULL, fig5b,
+fig6 <- ggarrange(fig6a, NULL, fig6b,
                   ncol = 3,
                   widths = c(0.95, 0.1, 1.25),
                   labels = c("A", "", "B"))
 
-# fig5
+# fig6
 
-# Figure 6: Example individual plots ####
+# Figure 7: Example individual plots ####
 # Genus-level plots
 # Extract significant genera from genus-agglomerated object
 aldex.list.genus <- sig_aldex2_cfu_genus$OTU
@@ -246,7 +246,7 @@ neg.taxa.fig <- bind_rows(neg.genus.table, neg.asv.table) %>%
 
 # Separate figures! Combined is too busy...
 
-fig6 <- ggarrange(neg.taxa.fig, NULL, pos.taxa.fig,
+fig7 <- ggarrange(neg.taxa.fig, NULL, pos.taxa.fig,
                         nrow = 3,
                         heights = c(1, 0.1, 2),
                         labels = c("A", "", "B"),
@@ -254,7 +254,7 @@ fig6 <- ggarrange(neg.taxa.fig, NULL, pos.taxa.fig,
                         legend = "right")
 
 
-fig6
+# fig7
 
-ggsave(plot = fig5, filename = "results/figures/Figure5_diff_abund_overall.pdf", width=9, height=9)
-ggsave(plot = fig6, filename = "results/figures/Figure6_diff_abund_examples.pdf", width=9, height=6)
+ggsave(plot = fig6, filename = "results/figures/Figure6_diff_abund_overall.pdf", width=9, height=9)
+ggsave(plot = fig7, filename = "results/figures/Figure7_diff_abund_examples.pdf", width=9, height=6)

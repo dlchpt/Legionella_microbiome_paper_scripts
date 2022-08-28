@@ -7,7 +7,7 @@ library(RColorBrewer)
 library(tidyverse)
 
 # Load plot settings and final data sets
-source(here("code", "settings_and_data_for_figures.R"))
+source(here("code", "03_settings_and_data_for_figures.R"))
 
 
 # Panel A: Phylum level ####
@@ -158,33 +158,7 @@ ggsave(plot = nitro.plot, filename = "results/figures/FigureSX_taxonomy_nitrospi
 
 
 
-# Supplemental (?) taxonomy tables to get the full taxonomy string for figures
-class.table <- as.data.frame(tax_table(V4.main.classes)) %>%
-  as_tibble(rownames = "ASV") %>%
-  select(Phylum, Class) %>%
-  arrange(Phylum, Class)
-
-order.table <- as.data.frame(tax_table(V4.main.order)) %>%
-  as_tibble(rownames = "ASV") %>%
-  select(Phylum, Class, Order) %>%
-  arrange(Phylum, Class, Order)
-
-family.table <- as.data.frame(tax_table(V4.main.family)) %>%
-  as_tibble(rownames = "ASV") %>%
-  select(Phylum, Class, Order, Family) %>%
-  arrange(Phylum, Class, Order, Family)
-
-genus.table <- as.data.frame(tax_table(V4.main.genus)) %>%
-  as_tibble(rownames = "ASV") %>%
-  select(Phylum, Class, Order, Family, Genus) %>%
-  arrange(Phylum, Class, Order, Family, Genus)
-
-write.csv(class.table, file = here("results", "tables", "Main.classes.csv"), row.names = FALSE)
-write.csv(order.table, file = here("results", "tables", "Main.orders.csv"), row.names = FALSE)
-write.csv(family.table, file = here("results", "tables", "Main.families.csv"), row.names = FALSE)
-write.csv(genus.table, file = here("results", "tables", "Main.genera.csv"), row.names = FALSE)
-
-
+## Count number of ASVs in each phylum and genus
 # Summarised data for editing
 phylum.summary <- as_tibble(phyloseq::psmelt(V4.RA), rownames = "Rows") %>%
   select(Phylum, OTU) %>%

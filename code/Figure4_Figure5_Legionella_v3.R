@@ -14,78 +14,13 @@ library(UpSetR)
 library(viridis)
 
 # Load plot settings and final data sets
-source(here("code", "settings_and_data_for_figures.R"))
+source(here("code", "03_settings_and_data_for_figures.R"))
 
 lod <- 1/nseqs*100
 
 city.levels <- c("Athens", "Copenhagen", "Rome", "Warsaw")
 cfu.levels <- c("0", "10<sup>1</sup>", "10<sup>2</sup>", "10<sup>3</sup>",
                 "10<sup>4</sup>", "10<sup>5</sup>", "10<sup>6</sup>+")
-
-# Panel A: Count per CFU category ####
-fig1a <- samples_V4 %>%
-  mutate(City = factor(City, levels = city.levels)) %>%
-  filter(!is.na(CFU_cat)) %>%
-  ggplot(aes(x = CFU_cat, fill = City)) +
-  geom_bar() +
-  facet_wrap(~ City, ncol = 4) +
-  scale_fill_manual(values = cbPalette.cities) +
-  scale_x_discrete(labels = cfu.levels) +
-  labs(x = "", 
-       y = "Sample count") +
-  theme(legend.position = "none",
-        panel.border = element_rect(fill = NA, colour = "black", linetype = "solid"),
-        axis.text.x = element_markdown())
-  
-
-# Panel B: Proportion Legionella genus in 16S data vs CFU category ####
-fig1b <- samples_V4 %>%
-  mutate(City = factor(City, levels = city.levels)) %>%
-  filter(!is.na(CFU_cat)) %>%
-  ggplot(aes(x = CFU_cat, y = (Leg_genus_sum*100 + 2/3*lod), colour = City, shape = CFU_pres_abs)) +
-  geom_jitter(width = 0.1, size = 3, alpha = 0.7) +
-  coord_trans(y = "log10") +
-  scale_y_continuous(breaks = c(0.01, 0.1, 1, 10, 100)) +
-  facet_wrap(~ City, ncol = 4) +
-  scale_colour_manual(values = cbPalette.cities) +
-  scale_shape_manual(values = shapes.cfu, na.value = 8) +
-  geom_hline(yintercept = lod, colour = "black", linetype = "dashed") +
-  scale_x_discrete(labels = cfu.levels) +
-  labs(x = "Legionella culture counts (CFU/L category)", 
-       y = "Legionella % in 16S data ") +
-  theme(legend.position = "none",
-        panel.border = element_rect(fill = NA, colour = "black", linetype = "solid"),
-        panel.grid.major = element_line(colour = "grey", size = 0.2),
-        axis.text.x = element_markdown())
-  
-
-fig1ab <- ggarrange(fig1a, fig1b,
-          nrow = 2,
-          labels = c("A", "B"),
-          heights = c(1, 1),
-          align = "v")
-
-
-# fig1ab
-
-# Panel C: Proportion of 16S Legionella seqs that are L. pneumo ####
-fig1c.plot <- samples_V4 %>%
-  mutate(City = factor(City, levels = city.levels)) %>%
-  filter(Leg_genus_sum > 0 & !is.na(CFU_pres_abs)) %>%
-  mutate(pneumo_prop = Leg_pneumo_sum / Leg_genus_sum) %>%
-ggplot(aes(x = City, y = pneumo_prop*100, colour = City, shape = CFU_pres_abs)) +
-  geom_boxplot(alpha = 0.5, outlier.shape = NA) +
-  geom_point(size = 3, position = position_jitterdodge(), alpha = 0.7) +
-  scale_colour_manual(values = cbPalette.cities) +
-  scale_shape_manual(values = shapes.cfu, na.value = 8) +
-  labs(x = "", y = "*L.pneumo* % (of Legionella 16S data)") +
-  theme(legend.position = "none",
-        axis.title.y = element_markdown())
-
-fig1c <- ggarrange(NULL, fig1c.plot, NULL,
-                   ncol = 1,
-                   heights = c(0.25, 1, 0.25),
-                   labels = c("", "C", ""))
 
 
 # Figure 4: Heatmap of Legionella ASVs ####
@@ -110,7 +45,7 @@ V4.leg.genus.grouped <- V4.leg.genus %>%
   summarise(n = n(),
             Tot.with.OTU = sum(Abundance > 0)) %>%
   filter(Tot.with.OTU > 1) #%>% # OTUs must occur twice in a city to be included in that city's list
-  # mutate(OTU = factor(OTU, levels = leg.order))
+# mutate(OTU = factor(OTU, levels = leg.order))
 
 # Pull out a character vector for each city, with the names of Legionella ASVs detected there
 leg.athens <- V4.leg.genus.grouped %>%
@@ -131,20 +66,11 @@ leg.all.list <- list(Athens = leg.athens,
                      Rome = leg.rome,
                      Warsaw = leg.warsaw)
 
-# Make a list of the intersections to highlight in colour
-# Common core in orange, region-specific in blue
-queries.list <- list(
-  list(query = intersects, params = list("Athens", "Copenhagen", "Rome", "Warsaw"), color = "black", active = T),
-  list(query = intersects, params = list("Athens"), color = cbPalette.cities["Athens"], active = T),
-  list(query = intersects, params = list("Copenhagen"), color = cbPalette.cities["Copenhagen"], active = T),
-  list(query = intersects, params = list("Rome"), color = cbPalette.cities["Rome"], active = T),
-  list(query = intersects, params = list("Warsaw"), color = cbPalette.cities["Warsaw"], active = T)
-)
 
-# Make figure and save as pdf
-intersect.leg.asvs <- upset(fromList(leg.all.list), main.bar.color = "dark grey", order.by = "freq", sets.x.label = "Total Leg. ASVs", queries = queries.list)
+# Run UpSetR to get intersections
+intersect.leg.asvs <- upset(fromList(leg.all.list), order.by = "freq")
 
-intersect.leg.asvs
+# intersect.leg.asvs
 
 # Then get just the ASVs unique to each city, and those found in more than one city.
 # These can be computed from the New_data object created during the intersect plot generation.
@@ -259,7 +185,7 @@ ASV_row_gaps <- c(10, 18, 31, 38)
 
 # Finally, draw the heatmap!
 # Rows clustered by Euclidean distance
-fig1d <- pheatmap(
+fig4 <- pheatmap(
   mat               = otus.trans.ord,
   color             = viridis(10),
   border_color      = NA,
@@ -275,21 +201,83 @@ fig1d <- pheatmap(
   na_col            = "grey"
 )
 
-fig1d
+# fig4
 # Only ASVs present in at least 5 samples overall are shown.
 # An ASV is included on a City list if it occurs in at least two samples from that city.
 
-# Darn it, pheatmap objects cannot easily be included in ggarrange...
-# Might cut my losses and add this panel in Illustrator.
-
-ggsave(plot = fig1d, filename = "results/figures/Figure1c_Legionella_heatmap.pdf", width=12, height=7)
+ggsave(plot = fig4, filename = "results/figures/Figure4_Legionella_heatmap.pdf", width=12, height=7)
 
 
 
-# Combined figure, panels A and B
-fig1 <- ggarrange(fig1ab, fig1c,
+# Figure 5: Legionella 16S vs culture data ####
+
+# Panel A: Count per CFU category ####
+fig5a <- samples_V4 %>%
+  mutate(City = factor(City, levels = city.levels)) %>%
+  filter(!is.na(CFU_cat)) %>%
+  ggplot(aes(x = CFU_cat, fill = City)) +
+  geom_bar() +
+  facet_wrap(~ City, ncol = 4) +
+  scale_fill_manual(values = cbPalette.cities) +
+  scale_x_discrete(labels = cfu.levels) +
+  labs(x = "", 
+       y = "Sample count") +
+  theme(legend.position = "none",
+        panel.border = element_rect(fill = NA, colour = "black", linetype = "solid"),
+        axis.text.x = element_markdown())
+  
+
+# Panel B: Proportion Legionella genus in 16S data vs CFU category ####
+fig5b <- samples_V4 %>%
+  mutate(City = factor(City, levels = city.levels)) %>%
+  filter(!is.na(CFU_cat)) %>%
+  ggplot(aes(x = CFU_cat, y = (Leg_genus_sum*100 + 2/3*lod), colour = City, shape = CFU_pres_abs)) +
+  geom_jitter(width = 0.1, size = 3, alpha = 0.7) +
+  coord_trans(y = "log10") +
+  scale_y_continuous(breaks = c(0.01, 0.1, 1, 10, 100)) +
+  facet_wrap(~ City, ncol = 4) +
+  scale_colour_manual(values = cbPalette.cities) +
+  scale_shape_manual(values = shapes.cfu, na.value = 8) +
+  geom_hline(yintercept = lod, colour = "black", linetype = "dashed") +
+  scale_x_discrete(labels = cfu.levels) +
+  labs(x = "Legionella culture counts (CFU/L category)", 
+       y = "Legionella % in 16S data ") +
+  theme(legend.position = "none",
+        panel.border = element_rect(fill = NA, colour = "black", linetype = "solid"),
+        panel.grid.major = element_line(colour = "grey", size = 0.2),
+        axis.text.x = element_markdown())
+  
+
+fig5ab <- ggarrange(fig5a, fig5b,
+          nrow = 2,
+          labels = c("A", "B"),
+          heights = c(1, 1),
+          align = "v")
+
+
+# fig5ab
+
+# Panel C: Proportion of 16S Legionella seqs that are L. pneumo ####
+fig5c.plot <- samples_V4 %>%
+  mutate(City = factor(City, levels = city.levels)) %>%
+  filter(Leg_genus_sum > 0 & !is.na(CFU_pres_abs)) %>%
+  mutate(pneumo_prop = Leg_pneumo_sum / Leg_genus_sum) %>%
+ggplot(aes(x = City, y = pneumo_prop*100, colour = City, shape = CFU_pres_abs)) +
+  geom_boxplot(alpha = 0.5, outlier.shape = NA) +
+  geom_point(size = 3, position = position_jitterdodge(), alpha = 0.7) +
+  scale_colour_manual(values = cbPalette.cities) +
+  scale_shape_manual(values = shapes.cfu, na.value = 8) +
+  labs(x = "", y = "*L.pneumo* % (of Legionella 16S data)") +
+  theme(legend.position = "none",
+        axis.title.y = element_markdown())
+
+fig5c <- ggarrange(NULL, fig5c.plot, NULL,
+                   ncol = 1,
+                   heights = c(0.25, 1, 0.25),
+                   labels = c("", "C", ""))
+
+fig5 <- ggarrange(fig5ab, NULL, fig5c,
                   nrow = 1,
-                  labels = c("", ""),
-                  widths = c(2, 1))
+                  widths = c(1.2, 0.1, 0.7))
 
-ggsave(plot = fig1, filename = "results/figures/Figure1_Legionella.pdf", width=12, height=6)
+ggsave(plot = fig5, filename = "results/figures/Figure5_Legionella_ASVs_CFUs.pdf", width=10, height=5)

@@ -1,6 +1,7 @@
 # Figure 2: Alpha and beta diversity
-# Population richness, shannon, PCA, pairwise Aitchison distance
+# Population richness, shannon, PCA
 
+library(breakaway)
 library(cowplot)
 library(factoextra)
 library(ggpubr)
@@ -14,15 +15,15 @@ library(vegan)
 library(zCompositions)
 
 # Load plot settings and final data sets
-source(here("code", "settings_and_data_for_figures.R"))
+source(here("code", "03_settings_and_data_for_figures.R"))
 
-## Multipanel figure: Richness, shannon, pairwise distance, PCA ####
+## Multipanel figure: Richness, shannon, PCA ####
 # Panel A: Breakaway richness estimate ####
 # Breakaway calculation - takes ages so will comment out once run
-# br_V4 <- breakaway(V4)
+br_V4 <- breakaway(V4)
 
 # Save breakaway output to load quickly without having to re-run
-# saveRDS(br_V4, here("data", "process", "16S_breakaway.rds"))
+saveRDS(br_V4, here("data", "process", "16S_breakaway.rds"))
 
 br_V4 <- readRDS(here("data", "process", "16S_breakaway.rds"))
 
@@ -124,7 +125,6 @@ pmain_V4 <- fviz_pca_biplot(V4_PCA,
                             geom.var = c("arrow", "text"),
                             select.var = list(contrib=12),
                             col.var = "black") + 
-  # coord_fixed(1) + # scale the coordinates based on % variance explained
   coord_cartesian(xlim = manual.xlim, ylim = manual.ylim) +
   scale_colour_manual(name = "City", values = cbPalette.cities) +
   labs(title = "")
@@ -187,6 +187,6 @@ fig2 <- ggarrange(row1, NULL, row2,
                      nrow = 3,
                      heights = c(1, 0.01, 1.8))
 
-fig2
+# fig2
 
 ggsave(plot = fig2, filename = "results/figures/Figure2_alpha_beta_diversity.pdf", width=9, height=9)

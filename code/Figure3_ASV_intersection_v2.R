@@ -9,7 +9,7 @@ library(tidyverse)
 library(UpSetR)
 
 # Load plot settings and final data sets
-source(here("code", "settings_and_data_for_figures.R"))
+source(here("code", "03_settings_and_data_for_figures.R"))
 
 
 # Panel A: Intersection of all Legionella ASVs ####
