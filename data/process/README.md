@@ -1,0 +1,2 @@
+# Processed data
+This folder contains files generated during the analysis. To jump to the downstream analyses in the manuscript.Rmd file without having to process the raw sequences, the final ASV table and associated metadata can be downloaded from Figshare, https://doi.org/10.6084/m9.figshare.20685301.v1, and should be placed here. The outputs from breakaway and ALDEx2 are also available from Figshare, https://doi.org/10.6084/m9.figshare.20685370.v1, and should be placed here if those steps are to be skipped during manuscript compilation.
