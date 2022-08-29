@@ -35,9 +35,6 @@ Folder organisation follows the Schloss lab template, available from https://git
 	|- results        # output from workflows and analyses
 	| |- tables/      # text version of tables
 	| |- figures/     # graphs, designated for manuscript figures
-	|
-	|- exploratory/   # exploratory data analysis for study
-	| |- notebook/    # preliminary and additional analyses
 
 
 
