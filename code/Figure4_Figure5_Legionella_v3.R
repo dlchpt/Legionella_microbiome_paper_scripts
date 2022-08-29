@@ -118,7 +118,7 @@ otus.leg.tib <- as_tibble(as.data.frame(otus.leg), rownames = "Sample")
 
 # Extract metadata from Legionella-only phyloseq object
 metadata.leg <- as_tibble(sample_data(V4.leg.filt), rownames = "Sample") %>%
-  select(Sample, City, Bldg_ID, Location_in_building, 
+  dplyr::select(Sample, City, Bldg_ID, Location_in_building, 
          CFU_L, CFU_cat, CFU_pres_abs, Temp_degC) %>%
   mutate(Bldg_no = str_sub(Bldg_ID, -2, -1))
 
@@ -132,7 +132,7 @@ otus.leg.with.metadata <- left_join(otus.leg.tib, metadata.leg) %>%
 # Now that the samples are listed in the desired order, extract the ASV table
 # and metadata again, and transpose the ASV table
 otus.leg.sorted <- otus.leg.with.metadata %>%
-  select(starts_with("ASV")) %>%
+  dplyr::select(starts_with("ASV")) %>%
   as.matrix()
 
 rownames(otus.leg.sorted) <- otus.leg.with.metadata$Sample
@@ -141,7 +141,7 @@ otus.leg.sorted.t <- t(otus.leg.sorted)
 
 # Pull out named species associated with specific ASVs, rename ASV280
 leg.sp <- V4.leg.genus %>%
-  select(OTU, Species) %>%
+  dplyr::select(OTU, Species) %>%
   distinct() %>%
   mutate(Species = if_else(OTU == "ASV280", "rubrilucens.taurinensis", Species)) %>%
   rename(ASV = OTU) %>%
@@ -157,7 +157,7 @@ otus.trans.tib.ord <- left_join(tibble("ASV" = ordered.leg.asvs), otus.trans.tib
   mutate(ASV.adj = gsub("_NA", "", ASV.adj))
 
 otus.trans.ord <- otus.trans.tib.ord %>%
-  select(-ASV, -ASV.adj, -Species) %>%
+  dplyr::select(-ASV, -ASV.adj, -Species) %>%
   as.matrix()
 
 rownames(otus.trans.ord) <- otus.trans.tib.ord$ASV.adj
