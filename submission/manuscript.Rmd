@@ -234,8 +234,16 @@ br_V4_filt <- br_V4_ord %>%
   as.data.frame()
 
 
-# City * CFU, blocked with Bldg_loc_ID (betta_random can't take two grouping variables, it)
-betta_blocked <- betta_random(formula = estimate ~ City * CFU_pres_abs + (1 | Bldg_loc_ID), ses = error, data = br_V4_filt)
+# Run betta_random
+# City * CFU, blocked with Bldg_loc_ID (betta_random can't take two grouping variables, it seems)
+betta_blocked <- betta_random(chats = br_V4_filt$estimate,
+                                       ses = br_V4_filt$error,
+                                       X = model.matrix(~City * CFU_pres_abs, data = br_V4_filt),
+                                       groups=br_V4_filt$Bldg_loc_ID)
+
+# This newer way of specifying the formula stopped working when I updated packages...
+# betta_blocked <- betta_random(formula = estimate ~ City * CFU_pres_abs + (1 | Bldg_loc_ID), 
+                              # ses = error, data = br_V4_filt)
 
 richness.betta.table <- betta_blocked$table
 
