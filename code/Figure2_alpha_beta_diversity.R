@@ -104,7 +104,8 @@ samples_V4_pca <- samples_V4 %>%
   mutate(CFU_shape = case_when(
     CFU_pres_abs == "neg" ~ shapes.cfu["neg"],
     CFU_pres_abs == "pos" ~ shapes.cfu["pos"],
-    is.na(CFU_pres_abs) ~ 1))
+    is.na(CFU_pres_abs) ~ 1)) %>%
+  mutate(CFU_pres_abs = replace_na(CFU_pres_abs, "not.measured"))
 
 # Figure: main ordination
 # manual.xlim <- c(-50, 100)
@@ -117,17 +118,20 @@ pmain_V4 <- fviz_pca_biplot(V4_PCA,
                             repel = TRUE, # avoid text overlapping
                             # Samples (i.e. individuals)
                             geom = "point", 
-                            col.ind = samples_V4_pca$City,
-                            pointsize = 4,
-                            pointshape = samples_V4_pca$CFU_shape, alpha = 0.7,
+                            col.ind = "white",
+                            pointsize = 0,
+                            # pointshape = samples_V4_pca$CFU_shape, alpha = 0.7,
                             mean.point = FALSE,
                             # ASVs (i.e. variables)
                             geom.var = c("arrow", "text"),
                             select.var = list(contrib=12),
                             col.var = "black") + 
+  # coord_fixed(1) + # scale the coordinates based on % variance explained
   coord_cartesian(xlim = manual.xlim, ylim = manual.ylim) +
+  geom_point(aes(colour = samples_V4_pca$City, shape = as.factor(samples_V4_pca$CFU_pres_abs))) +
   scale_colour_manual(name = "City", values = cbPalette.cities) +
-  labs(title = "")
+  scale_shape_manual(values = c("not.measured" = 1, "neg" = 8, "pos" = 19)) +
+  labs(title = "", shape = "Cultured Legionella")
 
 # pmain_V4
 
