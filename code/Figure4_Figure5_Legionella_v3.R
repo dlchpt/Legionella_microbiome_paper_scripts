@@ -244,7 +244,7 @@ fig5b <- samples_V4 %>%
        y = "Legionella % in 16S data ") +
   theme(legend.position = "none",
         panel.border = element_rect(fill = NA, colour = "black", linetype = "solid"),
-        panel.grid.major = element_line(colour = "grey", size = 0.2),
+        panel.grid.major = element_line(colour = "grey", linewidth = 0.2),
         axis.text.x = element_markdown())
   
 
