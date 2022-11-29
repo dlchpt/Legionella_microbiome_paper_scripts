@@ -38,7 +38,7 @@ phylum.plot <- V4.phylum.melted %>%
   rotate_x_text(angle = 45) +
   scale_colour_manual(values = cbPalette.cities, na.value = "light grey") +
   scale_shape_manual(name = "Legionella cult.", values = shapes.cfu, na.value = 1) +
-  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, linewidth = 1)) +
   rremove("legend") +
   rremove("x.text") +
   labs(x = "", y = "Relative abundance (%)")
@@ -74,7 +74,7 @@ genus.plot <- V4.genus.melted %>%
   scale_shape_manual(name = "Legionella cult.", values = shapes.cfu, na.value = 1) +
   rremove("legend") +
   rremove("x.text") +
-  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, linewidth = 1)) +
   labs(x = "", y = "Relative abundance (%)")
 
 
@@ -118,7 +118,7 @@ class.plot <- V4.class.melted %>%
   rotate_x_text(angle = 90) +
   scale_colour_manual(values = cbPalette.cities, na.value = "light grey") +
   scale_shape_manual(name = "Legionella cult.", values = shapes.cfu, na.value = 1) +
-  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, linewidth = 1)) +
   rremove("legend") +
   labs(title = "Main bacterial classes", x = "", y = "Relative abundance (%)")
 
@@ -150,7 +150,7 @@ nitro.plot <- V4.nitro.melted %>%
   scale_colour_manual(values = cbPalette.cities, na.value = "light grey") +
   scale_shape_manual(name = "Legionella cult.", values = shapes.cfu, na.value = 1) +
   rremove("legend") +
-  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, linewidth = 1)) +
   labs(title = "Main Nitrospira ASVs", x = "", y = "Relative abundance (%)")
 
 
@@ -161,14 +161,14 @@ ggsave(plot = nitro.plot, filename = "results/figures/FigureSX_taxonomy_nitrospi
 ## Count number of ASVs in each phylum and genus
 # Summarised data for editing
 phylum.summary <- as_tibble(phyloseq::psmelt(V4.RA), rownames = "Rows") %>%
-  select(Phylum, OTU) %>%
+  dplyr::select(Phylum, OTU) %>%
   distinct() %>%
   group_by(Phylum) %>%
   summarise(no.asvs = n()) %>%
   filter(Phylum %in% top.phyla)
 
 genus.summary <- as_tibble(phyloseq::psmelt(V4.RA), rownames = "Rows") %>%
-  select(Genus, OTU) %>%
+  dplyr::select(Genus, OTU) %>%
   distinct() %>%
   group_by(Genus) %>%
   summarise(no.asvs = n()) %>%
